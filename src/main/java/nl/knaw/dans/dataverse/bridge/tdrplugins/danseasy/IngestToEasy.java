@@ -1,7 +1,7 @@
 package nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy;
 
 import nl.knaw.dans.dataverse.bridge.tdrplugins.IDataverseIngest;
-import nl.knaw.dans.easy.sword2examples.Common;
+import nl.knaw.dans.dataverse.bridge.util.Misc;
 import org.apache.abdera.i18n.iri.IRI;
 import org.apache.abdera.model.Category;
 import org.apache.abdera.model.Entry;
@@ -36,18 +36,18 @@ public class IngestToEasy implements IDataverseIngest {
         File zipFile = new File(bagDir.getAbsolutePath() + ".zip");
         zipFile.delete();
         try {
-            Common.zipDirectory(bagDir, zipFile);
+            Misc.zipDirectory(bagDir, zipFile);
             // 1. Set up stream for calculating MD5
             FileInputStream fis = new FileInputStream(zipFile);
             MessageDigest md = MessageDigest.getInstance("MD5");
             DigestInputStream dis = new DigestInputStream(fis, md);
 
             // 2. Post entire bag to Col-IRI
-            CloseableHttpClient http = Common.createHttpClient(colIri.toURI(), uid, pw);
-            CloseableHttpResponse response = Common.sendChunk(dis, (int) zipFile.length(), "POST", colIri.toURI(), "bag.zip", "application/zip", http, false);
+            CloseableHttpClient http = Misc.createHttpClient(colIri.toURI(), uid, pw);
+            CloseableHttpResponse response = Misc.sendChunk(dis, (int) zipFile.length(), "POST", colIri.toURI(), "bag.zip", "application/zip", http, false);
 
             // 3. Check the response. If transfer corrupt (MD5 doesn't check out), report and exit.
-            String bodyText = Common.readEntityAsString(response.getEntity());
+            String bodyText = Misc.readEntityAsString(response.getEntity());
             if (response.getStatusLine().getStatusCode() != 201) {
                 LOG.error("FAILED. Status = " + response.getStatusLine());
                 LOG.error("Response body follows:");
@@ -62,7 +62,7 @@ public class IngestToEasy implements IDataverseIngest {
 
             // 4. Get the statement URL. This is the URL from which to retrieve the current status of the deposit.
             LOG.info("Retrieving Statement IRI (Stat-IRI) from deposit receipt ...");
-            Entry receipt = Common.parse(bodyText);
+            Entry receipt = Misc.parse(bodyText);
             Link statLink = receipt.getLink("http://purl.org/net/sword/terms/statement");
             IRI statIri = statLink.getHref();
             LOG.info("Stat-IRI = " + statIri);
@@ -85,8 +85,8 @@ public class IngestToEasy implements IDataverseIngest {
             Thread.sleep(1000);
             LOG.info("Checking deposit status ... ");
             response = http.execute(new HttpGet(statUri));
-            bodyText = Common.readEntityAsString(response.getEntity());
-            Feed statement = Common.parse(bodyText);
+            bodyText = Misc.readEntityAsString(response.getEntity());
+            Feed statement = Misc.parse(bodyText);
             List<Category> states = statement.getCategories("http://purl.org/net/sword/terms/state");
             if (states.isEmpty()) {
                 bodyText = "ERROR: NO STATE FOUND";
@@ -182,4 +182,6 @@ public class IngestToEasy implements IDataverseIngest {
         }
         return dois;
     }
+
+
 }

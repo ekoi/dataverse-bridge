@@ -21,8 +21,8 @@ import nl.knaw.dans.dataverse.bridge.converter.FilesXmlCreator;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.IDataverseIngest;
 import nl.knaw.dans.dataverse.bridge.converter.XsltDvn2TdrTransformer;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy.IngestToEasy;
+import nl.knaw.dans.dataverse.bridge.util.Misc;
 import nl.knaw.dans.dataverse.bridge.util.Status;
-import nl.knaw.dans.easy.sword2examples.Common;
 import org.apache.abdera.i18n.iri.IRI;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -127,7 +127,6 @@ public class DataverseBridgeController {
           dvnData.append("</files>");
 
 
-         String er = "";
          ar = new ArchivingReport(hdl, Status.PROGRESS, dvnBridgeDataset.getVersion(), dvnTdrUser);
          archivingReportDao.create(ar);
          long id = ar.getId();
@@ -136,7 +135,7 @@ public class DataverseBridgeController {
               Flowable.fromCallable(() -> {
                   composeBagit(xdeit, dvnBridgeDataset, bagTempDir);
 
-                  File tempCopy = Common.copyToTarget(bagTempDir.toFile());
+                  File tempCopy = Misc.copyToTarget(bagTempDir.toFile());
                   IDataverseIngest di = new IngestToEasy();
                   final String easyResponse = di.execute(tempCopy, new IRI(tdr.getIri()), dvnTdrUser.getTdrUsername(), dvnTdrUser.getTdrPassword());
                   LOG.info(easyResponse);
@@ -188,11 +187,6 @@ public class DataverseBridgeController {
           dvnData.append("</root>");
           return dvnData.toString();
       }
-
-
-
-
-
 
   }
 

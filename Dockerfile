@@ -18,8 +18,7 @@ ENV MAVEN_VERSION 3.5.0
 
 RUN yum update -y && \
     yum install -y unzip && \
-    yum install -y wget && \
-    yum install -y git && \
+    yum install -y wget &&
     yum clean all
 
 
