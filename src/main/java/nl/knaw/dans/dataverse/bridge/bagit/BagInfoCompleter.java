@@ -13,9 +13,11 @@ import org.joda.time.format.ISODateTimeFormat;
  */
 public class BagInfoCompleter implements Completer {
     BagFactory bagFactory;
-    public BagInfoCompleter (BagFactory bagFactory) {
+
+    public BagInfoCompleter(BagFactory bagFactory) {
         this.bagFactory = bagFactory;
     }
+
     @Override
     public Bag complete(Bag bag) {
         Bag newBag = bagFactory.createBag(bag);
@@ -30,7 +32,7 @@ public class BagInfoCompleter implements Completer {
         // add the CREATED field
         DateTime dt = new DateTime();
 
-        bagInfo.put("Created",ISODateTimeFormat.dateTime().print(dt));
+        bagInfo.put("Created", ISODateTimeFormat.dateTime().print(dt));
 
 
         // add the new BagInfoTxt to the newBag

@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequestMapping(method = RequestMethod.GET)
 public class MainController {
 
-  @RequestMapping("/")
-  @ResponseBody
-  public String index() {
-    return "Dataverse Bridge build based on the following technology: SWORD 2 + JPA + Hibernate + Postgres + Swagger with Spring Boot App started!";
-  }
+    @RequestMapping("/")
+    @ResponseBody
+    public String index() {
+        return "Dataverse Bridge build based on the following technology: SWORD 2 + JPA + Hibernate + Postgres + Swagger with Spring Boot App started!";
+    }
 
 }

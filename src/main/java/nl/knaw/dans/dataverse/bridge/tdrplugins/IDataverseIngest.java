@@ -9,6 +9,8 @@ import java.io.File;
  */
 public interface IDataverseIngest {
     public String execute(File bagDir, IRI colIri, String uid, String pw);
+
     public String getLandingPage();
+
     public String getDoi();
 }

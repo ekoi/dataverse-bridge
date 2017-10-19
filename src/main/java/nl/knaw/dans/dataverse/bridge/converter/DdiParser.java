@@ -28,7 +28,7 @@ public class DdiParser {
 
     public DvnBridgeDataset parse() {
         DvnBridgeDataset dvnBridgeDataset = null;
-        List<DvnFile>  dvnFiles = new ArrayList<DvnFile>();
+        List<DvnFile> dvnFiles = new ArrayList<DvnFile>();
         XPathFactory xpathFactory = XPathFactory.newInstance();
 
         // Create XPath object
@@ -78,23 +78,23 @@ public class DdiParser {
 
         //DON'T DELETE THIS. I need to deal with this case.
         //if (dataFile != null) {
-           // dvnf.setFilesytemname(dataFile.getFilesystemname());
-         //   dvnf.setFilepath("data/" + dvnf.getTitle());
-       //     if( dataFile.isRestricted())
+        // dvnf.setFilesytemname(dataFile.getFilesystemname());
+        //   dvnf.setFilepath("data/" + dvnf.getTitle());
+        //     if( dataFile.isRestricted())
         //        dvnf.setAccessRights("RESTRICTED_REQUEST");
-       // }
+        // }
 
         Node txtElement = (Node) xPath.evaluate("./*[local-name()='txt']", otherMatElement, XPathConstants.NODE);
-        if (txtElement != null )
+        if (txtElement != null)
             dvnf.setDescription(txtElement.getTextContent());
 
 
         Node notesElement = (Node) xPath.evaluate("./*[local-name()='notes']", otherMatElement, XPathConstants.NODE);
-        if (notesElement != null )
+        if (notesElement != null)
             dvnf.setFormat(notesElement.getTextContent());
 
         Node depDateElement = (Node) xPath.evaluate("//*[local-name()='depDate']", otherMatElement, XPathConstants.NODE);
-        if (depDateElement != null )
+        if (depDateElement != null)
             dvnf.setCreated(depDateElement.getTextContent());
 
 

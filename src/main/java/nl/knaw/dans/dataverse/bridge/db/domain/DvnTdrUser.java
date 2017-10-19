@@ -9,20 +9,21 @@ import java.io.Serializable;
  */
 
 @Entity
-@Table(name="dvn_tdr_user", uniqueConstraints=
+@Table(name = "dvn_tdr_user", uniqueConstraints =
 @UniqueConstraint(columnNames = {"dvn_user", "tdr_username", "tdr_id"}))
 
 public class DvnTdrUser implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public DvnTdrUser() { }
+    public DvnTdrUser() {
+    }
 
     public DvnTdrUser(long id) {
         this.id = id;
     }
 
     public DvnTdrUser(String dvnUser, String dvnUserApitoken
-                                , String tdrUsername, String tdrPassword, Tdr tdr) {
+            , String tdrUsername, String tdrPassword, Tdr tdr) {
         this.dvnUser = dvnUser;
         this.dvnUserApitoken = dvnUserApitoken;
         this.tdrUsername = tdrUsername;
@@ -37,7 +38,8 @@ public class DvnTdrUser implements Serializable {
     @Column(name = "dvn_user", nullable = false)
     private String dvnUser;
 
-    @Column(name = "dvn_user_apitoken")//it can be empty, but we need to decide it later. This api token is needed to dealt with permission of files.
+    @Column(name = "dvn_user_apitoken")
+//it can be empty, but we need to decide it later. This api token is needed to dealt with permission of files.
     private String dvnUserApitoken;
 
     @Column(name = "tdr_username", nullable = false)

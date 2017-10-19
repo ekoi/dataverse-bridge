@@ -26,11 +26,12 @@ public class DvnBridgeDataset {
     private List<EasyFileAttribute> easyFileAttribute;
 
 
-    public DvnBridgeDataset(String pid)  {
+    public DvnBridgeDataset(String pid) {
         setPid(pid);
         identifier = pid.split("/")[1];
         setFileLocationDir(pid.replace("hdl:", ""));
     }
+
     public String getIdentifier() {
         return identifier;
     }

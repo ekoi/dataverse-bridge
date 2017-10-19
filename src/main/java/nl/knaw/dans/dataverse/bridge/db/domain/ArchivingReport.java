@@ -19,7 +19,7 @@ import java.util.Date;
  * Created by Eko Indarto
  */
 @Entity
-@Table(name="archiving_report")
+@Table(name = "archiving_report")
 public class ArchivingReport implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -32,11 +32,11 @@ public class ArchivingReport implements Serializable {
     private Long id;
 
     @Temporal(value = TemporalType.TIMESTAMP)
-    @Column(name="start_ingest_time", nullable = false)
+    @Column(name = "start_ingest_time", nullable = false)
     private Date startIngestTime;
 
     @Temporal(value = TemporalType.TIMESTAMP)
-    @Column(name="end_ingest_time")
+    @Column(name = "end_ingest_time")
     private Date endIngestTime;
 
     @Type(type = "org.hibernate.type.TextType")
@@ -55,10 +55,12 @@ public class ArchivingReport implements Serializable {
     @Column(name = "version", nullable = false)
     private Integer version;
 
-    public ArchivingReport(){}
+    public ArchivingReport() {
+    }
 
     public ArchivingReport(long id) {
     }
+
     public ArchivingReport(String dataset, Status status, int version, DvnTdrUser dvnTdrUser) {
         this.dataset = dataset;
         this.status = status.toString();
@@ -66,6 +68,7 @@ public class ArchivingReport implements Serializable {
         this.startIngestTime = new Date();
         this.version = version;
     }
+
     public Long getId() {
         return id;
     }

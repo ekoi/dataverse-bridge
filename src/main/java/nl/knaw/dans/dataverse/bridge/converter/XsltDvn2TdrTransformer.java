@@ -98,6 +98,7 @@ public class XsltDvn2TdrTransformer {
         }
         return null;//TODO
     }
+
     public void createMetadata() {
         doc = getDocument();
         //createTempDirectories();
@@ -115,6 +116,7 @@ public class XsltDvn2TdrTransformer {
             e.printStackTrace();
         }
     }
+
     private void createDatasetXmlFile() {
         datasetXmlFile = new File(metadataDir + "/dataset.xml");
         try {
@@ -162,6 +164,7 @@ public class XsltDvn2TdrTransformer {
         System.out.println(filesXml);
         return filesXml;
     }
+
     public File getDatasetXmlFile() {
         return datasetXmlFile;
     }

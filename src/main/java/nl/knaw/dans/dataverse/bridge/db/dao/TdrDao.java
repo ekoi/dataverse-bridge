@@ -11,10 +11,10 @@ import java.util.List;
 /**
  * Class TdrDao
  * Created by Eko Indarto
- *
+ * <p>
  * This class is used to access data for the Tdr entity.
  * Tdr annotation allows the component scanning support to find and
- * configure the DAO wihtout any XML configuration and also provide the Spring 
+ * configure the DAO wihtout any XML configuration and also provide the Spring
  * exceptiom translation.
  * Since we've setup setPackagesToScan and transaction manager on
  * DatabaseConfig, any bean method annotated with Transactional will cause
@@ -24,57 +24,57 @@ import java.util.List;
 @Repository
 @Transactional
 public class TdrDao {
-  
-  // An EntityManager will be automatically injected from entityManagerFactory
-  // setup on DatabaseConfig class.
-  @PersistenceContext
-  private EntityManager entityManager;
-  
-  /**
-   * Save the tdr in the database.
-   */
-  public void create(Tdr tdr) {
-    entityManager.persist(tdr);
-    return;
-  }
-  
-  /**
-   * Delete the tdr from the database.
-   */
-  public void delete(Tdr tdr) {
-    if (entityManager.contains(tdr))
-      entityManager.remove(tdr);
-    else
-      entityManager.remove(entityManager.merge(tdr));
-    return;
-  }
-  
-  /**
-   * Return all the tdrs stored in the database.
-   */
-  @SuppressWarnings("unchecked")
-  public List<Tdr> getAll() {
-    return entityManager.createQuery("from Tdr order by id").getResultList();
-  }
+
+    // An EntityManager will be automatically injected from entityManagerFactory
+    // setup on DatabaseConfig class.
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Save the tdr in the database.
+     */
+    public void create(Tdr tdr) {
+        entityManager.persist(tdr);
+        return;
+    }
+
+    /**
+     * Delete the tdr from the database.
+     */
+    public void delete(Tdr tdr) {
+        if (entityManager.contains(tdr))
+            entityManager.remove(tdr);
+        else
+            entityManager.remove(entityManager.merge(tdr));
+        return;
+    }
+
+    /**
+     * Return all the tdrs stored in the database.
+     */
+    @SuppressWarnings("unchecked")
+    public List<Tdr> getAll() {
+        return entityManager.createQuery("from Tdr order by id").getResultList();
+    }
 
 
-  /**
-   * Update the passed tdr in the database.
-   */
-  public void update(Tdr tdr) {
-    entityManager.merge(tdr);
-    return;
-  }
+    /**
+     * Update the passed tdr in the database.
+     */
+    public void update(Tdr tdr) {
+        entityManager.merge(tdr);
+        return;
+    }
 
 
-  /**
-   * Return the Tdr having the passed name.
-   */
-  public Tdr getByName(String name) {
-    return (Tdr) entityManager.createQuery(
-            "from Tdr where name = :name")
-            .setParameter("name", name)
-            .getSingleResult();
-  }
+    /**
+     * Return the Tdr having the passed name.
+     */
+    public Tdr getByName(String name) {
+        return (Tdr) entityManager.createQuery(
+                "from Tdr where name = :name")
+                .setParameter("name", name)
+                .getSingleResult();
+    }
 
 } 

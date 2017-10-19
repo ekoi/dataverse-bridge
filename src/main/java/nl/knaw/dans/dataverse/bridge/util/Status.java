@@ -4,18 +4,18 @@ package nl.knaw.dans.dataverse.bridge.util;
  * Created by akmi on 16/05/17.
  */
 public enum Status {
-        NOT_ARCHIVED_YET,
-        FAILED,
-        PROGRESS,
-        ARCHIVED;
+    NOT_ARCHIVED_YET,
+    FAILED,
+    PROGRESS,
+    ARCHIVED;
 
-    public String toString(){
-        switch(this){
+    public String toString() {
+        switch (this) {
             case FAILED:
                 return "FAILED";
-            case PROGRESS :
+            case PROGRESS:
                 return "PROGRESS";
-            case ARCHIVED :
+            case ARCHIVED:
                 return "ARCHIVED";
         }
         return "NOT_ARCHIVED_YET";//default

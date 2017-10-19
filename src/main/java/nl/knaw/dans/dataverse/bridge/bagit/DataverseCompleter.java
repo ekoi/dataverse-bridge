@@ -1,10 +1,6 @@
 package nl.knaw.dans.dataverse.bridge.bagit;
 
-import gov.loc.repository.bagit.Bag;
-import gov.loc.repository.bagit.BagFactory;
-import gov.loc.repository.bagit.BagInfoTxt;
-import gov.loc.repository.bagit.Manifest;
-import gov.loc.repository.bagit.ManifestHelper;
+import gov.loc.repository.bagit.*;
 import gov.loc.repository.bagit.transformer.impl.CompleterHelper;
 import gov.loc.repository.bagit.transformer.impl.DefaultCompleter;
 import org.apache.commons.logging.Log;
@@ -17,7 +13,7 @@ import java.util.Date;
 /**
  * Created by akmi on 03/05/17.
  */
-public class DataverseCompleter extends DefaultCompleter  {
+public class DataverseCompleter extends DefaultCompleter {
 
     private static final Log log = LogFactory.getLog(DefaultCompleter.class);
 
@@ -123,17 +119,19 @@ public class DataverseCompleter extends DefaultCompleter  {
             log.trace("Not completing tag manifests");
         }
 
-        if (this.isCancelled()){ return null;}
+        if (this.isCancelled()) {
+            return null;
+        }
 
         log.trace("Done completing");
         return this.newBag;
     }
 
-        protected void handleBagIt() {
-            if (this.newBag.getBagItTxt() == null) {
-                this.newBag.putBagFile(this.newBag.getBagPartFactory().createBagItTxt());
-            }
+    protected void handleBagIt() {
+        if (this.newBag.getBagItTxt() == null) {
+            this.newBag.putBagFile(this.newBag.getBagPartFactory().createBagItTxt());
         }
+    }
 
     protected void handleBagInfo() {
         BagInfoTxt bagInfo = this.newBag.getBagInfoTxt();
@@ -202,7 +200,7 @@ public class DataverseCompleter extends DefaultCompleter  {
         this.helper.cleanManifests(this.newBag, this.newBag.getPayloadManifests());
 
         log.debug("Generating payload manifests");
-        this.helper.handleManifest(this.newBag, this.payloadManifestAlgorithm, ManifestHelper.getPayloadManifestFilename(this.payloadManifestAlgorithm, this.newBag.getBagConstants()),this.newBag.getPayload(), this.nonDefaultManifestSeparator);
+        this.helper.handleManifest(this.newBag, this.payloadManifestAlgorithm, ManifestHelper.getPayloadManifestFilename(this.payloadManifestAlgorithm, this.newBag.getBagConstants()), this.newBag.getPayload(), this.nonDefaultManifestSeparator);
     }
 
     public String getNonDefaultManifestSeparator() {

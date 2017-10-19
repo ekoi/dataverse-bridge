@@ -18,86 +18,83 @@ import java.util.List;
 @Controller
 public class TdrController {
 
-  // Wire the TdrDao used inside this controller.
-  @Autowired
-  private TdrDao tdrDao;
-  /**
-   * Create a new TdrController with an auto-generated id
-   * and Trust Digital Repository Name and IRI as passed
-   * values.
-   */
-  @RequestMapping(
-          value="/create",
-          method = RequestMethod.POST,
-          params = {"tdrName", "tdrIri"})
-  @ResponseBody
-  public Tdr create(String tdrName
-          , String tdrIri) {
-    try {
-      Tdr tdr = new Tdr(tdrName, tdrIri);
-      tdrDao.create(tdr);
-      return tdr;
-    }
-    catch (Exception ex) {
+    // Wire the TdrDao used inside this controller.
+    @Autowired
+    private TdrDao tdrDao;
 
-    }
-    return null;
-  }
-  
-  /**
-   * Delete the archivingRepository with the passed id.
-   */
-  @RequestMapping(
-          value="/delete", 
-          method = RequestMethod.DELETE,
-          params = {"id"})
-  @ResponseBody
-  public String delete(long id) {
-    try {
-      Tdr tdr = new Tdr(id);
-      tdrDao.delete(tdr);
-    }
-    catch (Exception ex) {
-      return "Error deleting the archivingRepository: " + ex.toString();
-    }
-    return "Tdr succesfully deleted!";
-  }
+    /**
+     * Create a new TdrController with an auto-generated id
+     * and Trust Digital Repository Name and IRI as passed
+     * values.
+     */
+    @RequestMapping(
+            value = "/create",
+            method = RequestMethod.POST,
+            params = {"tdrName", "tdrIri"})
+    @ResponseBody
+    public Tdr create(String tdrName
+            , String tdrIri) {
+        try {
+            Tdr tdr = new Tdr(tdrName, tdrIri);
+            tdrDao.create(tdr);
+            return tdr;
+        } catch (Exception ex) {
 
-  /**
-   * Retrieve the id for the user with the passed email address.
-   */
-  @RequestMapping(
-          value="/get-by-name",
-          method = RequestMethod.GET,
-          params = {"name"})
-  @ResponseBody
-  public Tdr getByName(String name) {
-    try {
-      Tdr tdr = tdrDao.getByName(name);
-      return tdr;
+        }
+        return null;
     }
-    catch (Exception ex) {
 
+    /**
+     * Delete the archivingRepository with the passed id.
+     */
+    @RequestMapping(
+            value = "/delete",
+            method = RequestMethod.DELETE,
+            params = {"id"})
+    @ResponseBody
+    public String delete(long id) {
+        try {
+            Tdr tdr = new Tdr(id);
+            tdrDao.delete(tdr);
+        } catch (Exception ex) {
+            return "Error deleting the archivingRepository: " + ex.toString();
+        }
+        return "Tdr succesfully deleted!";
     }
-    return null;
-  }
 
     /**
      * Retrieve the id for the user with the passed email address.
      */
     @RequestMapping(
-            value="/get-all",
+            value = "/get-by-name",
+            method = RequestMethod.GET,
+            params = {"name"})
+    @ResponseBody
+    public Tdr getByName(String name) {
+        try {
+            Tdr tdr = tdrDao.getByName(name);
+            return tdr;
+        } catch (Exception ex) {
+
+        }
+        return null;
+    }
+
+    /**
+     * Retrieve the id for the user with the passed email address.
+     */
+    @RequestMapping(
+            value = "/get-all",
             method = RequestMethod.GET)
     @ResponseBody
     public List<Tdr> getAll() {
         try {
             List<Tdr> tdrs = tdrDao.getAll();
             return tdrs;
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
 
         }
         return null;
     }
-  
+
 }

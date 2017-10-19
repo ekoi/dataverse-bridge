@@ -24,7 +24,7 @@ import java.util.List;
 public class FilesXmlCreator {
     private static final Logger LOG = LoggerFactory.getLogger(FilesXmlCreator.class);
 
-    public void create (List<DvnFile> efal, File f) {
+    public void create(List<DvnFile> efal, File f) {
         try {
             DocumentBuilderFactory dbFactory =
                     DocumentBuilderFactory.newInstance();

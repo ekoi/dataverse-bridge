@@ -21,96 +21,93 @@ import java.util.List;
 @Controller
 public class DvnTdrUserController {
 
-  // Wire the DvnTdrUserDao used inside this controller.
-  @Autowired
-  private DvnTdrUserDao dvnTdrUserDao;
+    // Wire the DvnTdrUserDao used inside this controller.
+    @Autowired
+    private DvnTdrUserDao dvnTdrUserDao;
 
-  // Wire the TdrDao used inside this controller.
-  @Autowired
-  private TdrDao tdrDao;
-  /**
-   * Create a new DvnTdrUserController with an auto-generated id
-   * and dvnUser, dvnUserApitoken, tdrUsername and tdrPassword
-   * as passed values.
-   */
-  @RequestMapping(
-          value="/create", 
-          method = RequestMethod.POST, 
-          params = {"dvnUser", "dvnUserApitoken", "tdrUsername", "tdrPassword", "tdrName"})
-@ResponseBody
-  public DvnTdrUser create(String dvnUser, String dvnUserApitoken, String tdrUsername, String tdrPassword, String tdrName) {
-    try {
-      Tdr tdr = tdrDao.getByName(tdrName);
-      if (tdr == null)
-          return null;
-      DvnTdrUser dvnTdrUser = new DvnTdrUser(dvnUser, dvnUserApitoken, tdrUsername, tdrPassword, tdr);
-      dvnTdrUserDao.create(dvnTdrUser);
-      return dvnTdrUser;
-    }
-    catch (Exception ex) {
+    // Wire the TdrDao used inside this controller.
+    @Autowired
+    private TdrDao tdrDao;
 
-    }
-    return null;
-  }
+    /**
+     * Create a new DvnTdrUserController with an auto-generated id
+     * and dvnUser, dvnUserApitoken, tdrUsername and tdrPassword
+     * as passed values.
+     */
+    @RequestMapping(
+            value = "/create",
+            method = RequestMethod.POST,
+            params = {"dvnUser", "dvnUserApitoken", "tdrUsername", "tdrPassword", "tdrName"})
+    @ResponseBody
+    public DvnTdrUser create(String dvnUser, String dvnUserApitoken, String tdrUsername, String tdrPassword, String tdrName) {
+        try {
+            Tdr tdr = tdrDao.getByName(tdrName);
+            if (tdr == null)
+                return null;
+            DvnTdrUser dvnTdrUser = new DvnTdrUser(dvnUser, dvnUserApitoken, tdrUsername, tdrPassword, tdr);
+            dvnTdrUserDao.create(dvnTdrUser);
+            return dvnTdrUser;
+        } catch (Exception ex) {
 
-  /**
-   * Delete the dvnTdrUser with the passed id.
-   */
-  @RequestMapping(
-          value="/delete",
-          method = RequestMethod.DELETE,
-          params = {"id"})
-  @ResponseBody
-  public String delete(long id) {
-    try {
-        DvnTdrUser dvnTdrUser = new DvnTdrUser(id);
-        dvnTdrUserDao.delete(dvnTdrUser);
+        }
+        return null;
     }
-    catch (Exception ex) {
-      return "Error deleting the dvnTdrUser: " + ex.toString();
-    }
-    return "Tdr succesfully deleted!";
-  }
 
-  /**
-   * Update the dvnUser, dvnUserApitoken, tdrUsername, tdrPassword,
-   * tdrName for the dvnTdrUser indentified by the passed id.
-   */
-  @RequestMapping(
-          value="/update/{id}",
-          method = RequestMethod.PUT,
-          params = {"id", "dvnUser", "dvnUserApitoken", "tdrUsername", "tdrPassword"})
-  @ResponseBody
-  public DvnTdrUser updateName(@PathVariable int id, String dvnUser, String dvnUserApitoken
-                            , String tdrUsername, String tdrPassword)  {
-    try {
-        DvnTdrUser dvnTdrUser = dvnTdrUserDao.getById(id);
-        dvnTdrUser.setDvnUser(dvnUser);
-        dvnTdrUser.setDvnUserApitoken(dvnUserApitoken);
-        dvnTdrUser.setTdrUsername(tdrUsername);
-        dvnTdrUser.setTdrPassword(tdrPassword);
-        dvnTdrUserDao.update(dvnTdrUser);
-        return dvnTdrUser;
+    /**
+     * Delete the dvnTdrUser with the passed id.
+     */
+    @RequestMapping(
+            value = "/delete",
+            method = RequestMethod.DELETE,
+            params = {"id"})
+    @ResponseBody
+    public String delete(long id) {
+        try {
+            DvnTdrUser dvnTdrUser = new DvnTdrUser(id);
+            dvnTdrUserDao.delete(dvnTdrUser);
+        } catch (Exception ex) {
+            return "Error deleting the dvnTdrUser: " + ex.toString();
+        }
+        return "Tdr succesfully deleted!";
     }
-    catch (Exception ex) {
-      //todo
+
+    /**
+     * Update the dvnUser, dvnUserApitoken, tdrUsername, tdrPassword,
+     * tdrName for the dvnTdrUser indentified by the passed id.
+     */
+    @RequestMapping(
+            value = "/update/{id}",
+            method = RequestMethod.PUT,
+            params = {"id", "dvnUser", "dvnUserApitoken", "tdrUsername", "tdrPassword"})
+    @ResponseBody
+    public DvnTdrUser updateName(@PathVariable int id, String dvnUser, String dvnUserApitoken
+            , String tdrUsername, String tdrPassword) {
+        try {
+            DvnTdrUser dvnTdrUser = dvnTdrUserDao.getById(id);
+            dvnTdrUser.setDvnUser(dvnUser);
+            dvnTdrUser.setDvnUserApitoken(dvnUserApitoken);
+            dvnTdrUser.setTdrUsername(tdrUsername);
+            dvnTdrUser.setTdrPassword(tdrPassword);
+            dvnTdrUserDao.update(dvnTdrUser);
+            return dvnTdrUser;
+        } catch (Exception ex) {
+            //todo
+        }
+        return null;
     }
-    return null;
-  }
 
     /**
      * Retrieve the id for the user with the passed email address.
      */
     @RequestMapping(
-            value="/get-all",
+            value = "/get-all",
             method = RequestMethod.GET)
     @ResponseBody
     public List<DvnTdrUser> getAll() {
         try {
             List<DvnTdrUser> dvnTdrUsers = dvnTdrUserDao.getAll();
             return dvnTdrUsers;
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
 
         }
         return null;

@@ -9,7 +9,7 @@ import java.io.File;
  * Class IngestToArchivematica
  * Created by Eko Indarto
  */
-public class IngestToArchivematica implements IDataverseIngest{
+public class IngestToArchivematica implements IDataverseIngest {
     @Override
     public String execute(File bagDir, IRI colIri, String uid, String pw) {
         return null;

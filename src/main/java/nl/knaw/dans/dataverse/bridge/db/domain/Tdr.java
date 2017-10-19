@@ -8,11 +8,12 @@ import java.io.Serializable;
  */
 
 @Entity
-@Table(name="tdr")
+@Table(name = "tdr")
 public class Tdr implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public Tdr() { }
+    public Tdr() {
+    }
 
     public Tdr(long id) {
         this.id = id;

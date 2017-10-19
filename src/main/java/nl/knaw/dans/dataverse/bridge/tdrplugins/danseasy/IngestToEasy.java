@@ -29,6 +29,7 @@ public class IngestToEasy implements IDataverseIngest {
 
     private String doi;
     private static final Logger LOG = LoggerFactory.getLogger(IngestToEasy.class);
+
     @Override
     public String execute(File bagDir, IRI colIri, String uid, String pw) {
         StringBuffer sb = new StringBuffer("");
@@ -70,7 +71,7 @@ public class IngestToEasy implements IDataverseIngest {
             // 5. Check statement every ten seconds (a bit too frantic, but okay for this test). If status changes:
             // report new status. If status is an error (INVALID, REJECTED, FAILED) or ARCHIVED: exit.
         } catch (Exception e) {
-           LOG.error("ERROR: " + e.getMessage());
+            LOG.error("ERROR: " + e.getMessage());
         }
 
 
@@ -92,13 +93,11 @@ public class IngestToEasy implements IDataverseIngest {
                 bodyText = "ERROR: NO STATE FOUND";
                 LOG.error(bodyText);
                 return bodyText;
-            }
-            else if (states.size() > 1) {
+            } else if (states.size() > 1) {
                 bodyText = "ERROR: FOUND TOO MANY STATES (" + states.size() + "). CAN ONLY HANDLE ONE";
                 LOG.error(bodyText);
                 return (bodyText);
-            }
-            else {
+            } else {
                 String state = states.get(0).getTerm();
                 LOG.info(state);
                 String doiNumber = "";
@@ -106,8 +105,7 @@ public class IngestToEasy implements IDataverseIngest {
                     LOG.error("FAILURE. Complete statement follows:");
                     LOG.error(bodyText);
                     return (state);
-                }
-                else if (state.equals("ARCHIVED")) {
+                } else if (state.equals("ARCHIVED")) {
                     List<Entry> entries = statement.getEntries();
                     LOG.info("SUCCESS. ");
                     if (entries.size() == 1) {
@@ -150,6 +148,7 @@ public class IngestToEasy implements IDataverseIngest {
             }
         }
     }
+
     @Override
     public String getLandingPage() {
         return landingPage;
@@ -172,7 +171,7 @@ public class IngestToEasy implements IDataverseIngest {
         List<String> dois = new ArrayList<String>();
 
         List<Link> links = entry.getLinks("self");
-        for(Link link: links) {
+        for (Link link : links) {
             IRI href = link.getHref();
             if (href.getHost().equals("doi.org")) {
                 String path = href.getPath();

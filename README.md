@@ -6,13 +6,18 @@ Available options are:
 - Archivematica
 
 
-docker run --name dvn-bridge -d -e POSTGRES_USER=dvnbridge -e POSTGRES_PASSWORD=qwerty postgres:latest
-docker exec -it dvn-bridge bash
-psql -U dvnbridge -h 172.17.0.5  -p 5432
+#create container for dataverse bridge using postgres:latest images
+#Postgres username: bridgeuser, password: Am@l1n, database: bridgedb
+docker run --name dvn-bridge-postgres -d -e POSTGRES_USER=bridgeuser -e POSTGRES_PASSWORD=Am@l1n -e POSTGRES_DB=bridgedb --restart unless-stopped postgres:latest
 
+#check the ip address of dvn-bridge-postgres, this ip address is needed to put in application.properties
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dvn-bridge-postgres
+
+#Build dataverse-bridge image
 docker build -t dans/dataverse-bridge .
-docker run -p 8592:8592 -d --privileged=true -it --link dvn-bridge:dvn-bridge -e "POSTGRES_DATABASE=bridgedb" -e "POSTGRES_USER=bridgeuser" -e "POSTGRES_PASSWORD=secret" --expose=4848 --name=dvn-bridge-easy dans/dataverse-bridge
-docker exec -it dvn-bridge-easy bash
 
+#create dbsrv container using dans/dataverse-bridge image and connect with dvn-bridge-postgres container 
+docker run -p 8592:8592 -d --privileged=true -it --link dvn-bridge-postgres:dbp --name=dbsrv dans/dataverse-bridge
 
-mvn package && java -jar target/dataverse-bridge-docker-1.0.0-SNAPSHOT.jar
+#access to dbsrv container
+docker exec -it dbsrv java -jar /usr/local/dataverse-bridge/dbsrv.jar
