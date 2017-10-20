@@ -21,3 +21,7 @@ docker run -p 8592:8592 -d --privileged=true -it --link dvn-bridge-postgres:dbp 
 
 #access to dbsrv container
 docker exec -it dbsrv java -jar /usr/local/dataverse-bridge/dbsrv.jar
+
+#The ip address of dbsrv
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dbsrv
+

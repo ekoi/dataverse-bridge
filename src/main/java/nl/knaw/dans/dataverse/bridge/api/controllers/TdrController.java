@@ -45,7 +45,7 @@ public class TdrController {
     }
 
     /**
-     * Delete the archivingRepository with the passed id.
+     * Delete the Tdr with the passed id.
      */
     @RequestMapping(
             value = "/delete",
@@ -63,7 +63,7 @@ public class TdrController {
     }
 
     /**
-     * Retrieve the id for the user with the passed email address.
+     * Retrieve the Tdr with the passed name.
      */
     @RequestMapping(
             value = "/get-by-name",
@@ -81,7 +81,7 @@ public class TdrController {
     }
 
     /**
-     * Retrieve the id for the user with the passed email address.
+     * Retrieve the list of Tdrs.
      */
     @RequestMapping(
             value = "/get-all",

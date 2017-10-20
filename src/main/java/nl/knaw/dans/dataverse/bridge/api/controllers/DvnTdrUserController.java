@@ -97,7 +97,7 @@ public class DvnTdrUserController {
     }
 
     /**
-     * Retrieve the id for the user with the passed email address.
+     * Retrieve the list of DvnTdrUser.
      */
     @RequestMapping(
             value = "/get-all",
