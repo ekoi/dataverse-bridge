@@ -4,7 +4,10 @@ import nl.knaw.dans.dataverse.bridge.db.dao.DvnTdrUserDao;
 import nl.knaw.dans.dataverse.bridge.db.dao.TdrDao;
 import nl.knaw.dans.dataverse.bridge.db.domain.DvnTdrUser;
 import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
+import nl.knaw.dans.dataverse.bridge.util.Misc;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -96,6 +99,60 @@ public class DvnTdrUserController {
         return null;
     }
 
+    /*
+     * Retrieve the DvnTdrUser with the passed name.
+     */
+    @RequestMapping(
+            value = "/get-by-name",
+            method = RequestMethod.GET,
+            params = {"dvnUser"})
+    public ResponseEntity getByName(String dvnUser) {
+        List<DvnTdrUser> dvnTdrUsers = dvnTdrUserDao.getByDvnUsername(dvnUser);
+        if (dvnTdrUsers == null || dvnTdrUsers.isEmpty())
+            return Misc.emptyJsonResponse();
+
+        return new ResponseEntity(dvnTdrUsers, HttpStatus.OK);
+    }
+
+    /*
+     * Retrieve the DvnTdrUser with the passed name.
+     */
+    @RequestMapping(
+            value = "/get-by-name/{tdrname}",
+            method = RequestMethod.GET,
+            params = {"dvnUser"})
+    public ResponseEntity getByNameAndTdr(@PathVariable String tdrname, String dvnUser) {
+        Tdr tdr = tdrDao.getByName(tdrname);
+        if (tdr == null)
+            return Misc.emptyJsonResponse();
+
+        DvnTdrUser dvnTdrUser = dvnTdrUserDao.getByDvnUserAndTdrName(dvnUser, tdr.getId());
+        if (dvnTdrUser == null)
+            return Misc.emptyJsonResponse();
+        return new ResponseEntity(dvnTdrUser, HttpStatus.OK);
+    }
+
+    /*
+     * Retrieve the DvnTdrUser with the passed tdr.
+     */
+    @RequestMapping(
+            value = "/get-by-tdr",
+            method = RequestMethod.GET,
+            params = {"tdrname"})
+    public ResponseEntity getByTdr(String tdrname) {
+
+        Tdr tdr = tdrDao.getByName(tdrname);
+        if (tdr == null)
+            return Misc.emptyJsonResponse();
+
+        List<DvnTdrUser> dvnTdrUsers = dvnTdrUserDao.getByTdrName(tdr);
+        if (dvnTdrUsers == null || dvnTdrUsers.isEmpty())
+            return Misc.emptyJsonResponse();
+
+        return new ResponseEntity(dvnTdrUsers, HttpStatus.OK);
+
+    }
+
     /**
      * Retrieve the list of DvnTdrUser.
      */
@@ -104,12 +161,6 @@ public class DvnTdrUserController {
             method = RequestMethod.GET)
     @ResponseBody
     public List<DvnTdrUser> getAll() {
-        try {
-            List<DvnTdrUser> dvnTdrUsers = dvnTdrUserDao.getAll();
-            return dvnTdrUsers;
-        } catch (Exception ex) {
-
-        }
-        return null;
+        return dvnTdrUserDao.getAll();
     }
 }

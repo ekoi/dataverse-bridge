@@ -2,7 +2,11 @@ package nl.knaw.dans.dataverse.bridge.api.controllers;
 
 import nl.knaw.dans.dataverse.bridge.db.dao.TdrDao;
 import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
+import nl.knaw.dans.dataverse.bridge.util.EmptyJsonResponse;
+import nl.knaw.dans.dataverse.bridge.util.Misc;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -26,6 +30,7 @@ public class TdrController {
      * Create a new TdrController with an auto-generated id
      * and Trust Digital Repository Name and IRI as passed
      * values.
+     * The name value is converted to uppercase.
      */
     @RequestMapping(
             value = "/create",
@@ -35,7 +40,7 @@ public class TdrController {
     public Tdr create(String tdrName
             , String tdrIri) {
         try {
-            Tdr tdr = new Tdr(tdrName, tdrIri);
+            Tdr tdr = new Tdr(tdrName.toUpperCase(), tdrIri);
             tdrDao.create(tdr);
             return tdr;
         } catch (Exception ex) {
@@ -69,15 +74,12 @@ public class TdrController {
             value = "/get-by-name",
             method = RequestMethod.GET,
             params = {"name"})
-    @ResponseBody
-    public Tdr getByName(String name) {
-        try {
-            Tdr tdr = tdrDao.getByName(name);
-            return tdr;
-        } catch (Exception ex) {
+    public ResponseEntity getByName(String name) {
+        Tdr tdr = tdrDao.getByName(name.toUpperCase());
+        if (tdr != null)
+            return new ResponseEntity(tdr, HttpStatus.OK);
 
-        }
-        return null;
+        return Misc.emptyJsonResponse();
     }
 
     /**
@@ -88,13 +90,7 @@ public class TdrController {
             method = RequestMethod.GET)
     @ResponseBody
     public List<Tdr> getAll() {
-        try {
-            List<Tdr> tdrs = tdrDao.getAll();
-            return tdrs;
-        } catch (Exception ex) {
-
-        }
-        return null;
+        return tdrDao.getAll();
     }
 
 }

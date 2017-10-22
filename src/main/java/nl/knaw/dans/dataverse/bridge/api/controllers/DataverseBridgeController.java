@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -74,18 +76,21 @@ public class DataverseBridgeController {
             value = "/ingest/{hdlPrefix}/{hdl}/target/{tdrName}",
             method = RequestMethod.POST,
             params = {"dvnUser"})
-    @ResponseBody
-    public String ingestToTdr(@PathVariable String hdlPrefix, @PathVariable String hdl, @PathVariable String tdrName,
-                              String dvnUser) {
+    public ResponseEntity ingestToTdr(@PathVariable String hdlPrefix, @PathVariable String hdl, @PathVariable String tdrName,
+                                      String dvnUser) {
 
         Tdr tdr = tdrDao.getByName(tdrName);
-        if (tdr == null)
-            return "ERROR no Trust Digital Repository with the name '" + tdrName + "'";
+        if (tdr == null) {
+            LOG.error("ERROR no Trust Digital Repository with the name '" + tdrName + "'");
+            return new ResponseEntity(Misc.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
+
+        }
 
         DvnTdrUser dvnTdrUser = dvnTdrUserDao.getByDvnUserAndTdrName(dvnUser, tdr.getId());
-        if (dvnTdrUser == null)
-            return "ERROR no Dataverse user '" + dvnUser + "' and Trust Digital Repository name '" + tdrName + "'";
-
+        if (dvnTdrUser == null){
+            LOG.error("ERROR no Dataverse user '" + dvnUser + "' and Trust Digital Repository name '" + tdrName + "'");
+            return new ResponseEntity(Misc.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
+        }
         Environment env = context.getEnvironment();
         XsltDvn2TdrTransformer xdeit = new XsltDvn2TdrTransformer(
                             env.getProperty("dataverse.ddi.export.url") + hdlPrefix + "/" + hdl
@@ -94,7 +99,7 @@ public class DataverseBridgeController {
         DdiParser dp = new DdiParser(xdeit.getDocument());
         DvnBridgeDataset dvnBridgeDataset = dp.parse();
 
-        ArchivingReport ar = archivingReportDao.findByDatasetAndVersionAndDvnTdrUserId(dvnBridgeDataset.getIdentifier(), dvnBridgeDataset.getVersion(), dvnTdrUser);
+        ArchivingReport ar = archivingReportDao.findByDatasetAndVersionAndDvnTdrUserId(dvnBridgeDataset.getPid(), dvnBridgeDataset.getVersion(), dvnTdrUser);
 
         StringBuffer dvnData = new StringBuffer();
 
@@ -115,6 +120,8 @@ public class DataverseBridgeController {
                 try {
                     //Check whether the file restricted or not, if it restricted use api-token to download it.
                     String url = dvnFile.getDvnFileUri();
+                    //Since the files are located on the Dataverse production production, replace to dataverse.nl
+                    url = url.replace("test.dataverse.nl","dataverse.nl");
                     if (checkFilePermission(url) == FilePermissionStatus.RESTRICTED) {
                         dvnFile.setAccessRights("RESTRICTED_REQUEST");
                         FileUtils.copyURLToFile(new URL(url + "?key=" + dvnTdrUser.getDvnUserApitoken()), dvnFileForIngest);
@@ -122,13 +129,14 @@ public class DataverseBridgeController {
                         FileUtils.copyURLToFile(new URL(url), dvnFileForIngest);
                     }
                 } catch (IOException e) {
-                    return "ERROR, msg: " + e.getMessage();
+                    LOG.error("ERROR, msg: " + e.getMessage());
+                    return new ResponseEntity(Misc.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
                 }
             }
             dvnData.append("</files>");
 
 
-            ar = new ArchivingReport(hdl, Status.PROGRESS, dvnBridgeDataset.getVersion(), dvnTdrUser);
+            ar = new ArchivingReport(dvnBridgeDataset.getPid(), Status.PROGRESS, dvnBridgeDataset.getVersion(), dvnTdrUser);
             archivingReportDao.create(ar);
             long id = ar.getId();
             try {
@@ -166,8 +174,8 @@ public class DataverseBridgeController {
             LOG.info("hdl-prefix: " + hdlPrefix);
             dvnData.append("<easyResponse>");
             dvnData.append("</easyResponse>");
-            return "<root><pid><prefix>" + hdlPrefix + "</prefix><hdl>hdl:" + hdlPrefix + "/" + hdl + "</hdl></pid>" + dvnData
-                    + "</root>";
+            return new ResponseEntity("<root><pid><prefix>" + hdlPrefix + "</prefix><hdl>hdl:" + hdlPrefix + "/" + hdl + "</hdl></pid>" + dvnData
+                    + "</root>", HttpStatus.OK);
         } else {
 
             dvnData.append("<root>");
@@ -184,7 +192,7 @@ public class DataverseBridgeController {
             }
             //dvnData.append("<archivedLocation>" + ar.getTargetUrl() + "</archivedLocation>");
             dvnData.append("</root>");
-            return dvnData.toString();
+            return new ResponseEntity(dvnData, HttpStatus.OK);
         }
     }
 

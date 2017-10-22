@@ -1,6 +1,7 @@
 package nl.knaw.dans.dataverse.bridge.db.dao;
 
 import nl.knaw.dans.dataverse.bridge.db.domain.DvnTdrUser;
+import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
@@ -83,7 +84,31 @@ public class DvnTdrUserDao {
         try {
             return (DvnTdrUser) query.getSingleResult();
         } catch (NoResultException nre) {
-            //Ignore this because as per your logic this is ok!
+            //Ignore this because as per our logic this is ok!
+        }
+        return null;
+    }
+
+    public List<DvnTdrUser> getByDvnUsername(String dvnUser) {
+        Query query = entityManager.createQuery(
+                "from DvnTdrUser where dvnUser = :dvnUser")
+                .setParameter("dvnUser", dvnUser);
+        try {
+            return (List<DvnTdrUser>) query.getResultList();
+        } catch (NoResultException nre) {
+            //Ignore this because as per our logic this is ok!
+        }
+        return null;
+    }
+
+    public List<DvnTdrUser> getByTdrName(Tdr tdr) {
+        Query query = entityManager.createQuery(
+                "from DvnTdrUser where tdr in :tdr")
+                .setParameter("tdr", tdr);
+        try {
+            return (List<DvnTdrUser>) query.getResultList();
+        } catch (NoResultException nre) {
+            //Ignore this because as per our logic this is ok!
         }
         return null;
     }

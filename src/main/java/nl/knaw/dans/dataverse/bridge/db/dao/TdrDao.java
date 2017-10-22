@@ -4,7 +4,9 @@ import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import javax.transaction.Transactional;
 import java.util.List;
 
@@ -71,10 +73,14 @@ public class TdrDao {
      * Return the Tdr having the passed name.
      */
     public Tdr getByName(String name) {
-        return (Tdr) entityManager.createQuery(
+        Query q = entityManager.createQuery(
                 "from Tdr where name = :name")
-                .setParameter("name", name)
-                .getSingleResult();
+                .setParameter("name", name);
+        try {
+            return (Tdr) q.getSingleResult();
+        } catch (NoResultException nre) {
+            //Ignore this because as per our logic this is ok!
+        }
+        return null;
     }
-
 } 

@@ -86,9 +86,24 @@ public class ArchivingReportDao {
         try {
             return (ArchivingReport) query.getSingleResult();
         } catch (NoResultException nre) {
-            //Ignore this because as per your logic this is ok!
+            //Ignore this because as per our logic this is ok!
         }
         LOG.info("No reporting data found where dataset: " + dataset + " version: " + version + " and dataverse user : " + dvnTdrUser.getDvnUser());
+        return null;
+    }
+
+    public ArchivingReport findByDatasetAndStatusAndDvnTdrUserId(String dataset, Status status, DvnTdrUser dvnTdrUser) {
+        Query query = entityManager.createQuery(
+                "from ArchivingReport where dataset = :dataset and status = :status and dvnTdrUser = :dvnTdrUser")
+                .setParameter("dataset", dataset)
+                .setParameter("status", status.toString())
+                .setParameter("dvnTdrUser", dvnTdrUser);
+        try {
+            return (ArchivingReport) query.getSingleResult();
+        } catch (NoResultException nre) {
+            //Ignore this because as per our logic this is ok!
+        }
+        LOG.info("No reporting data found where dataset: " + dataset + " status: " + status.toString() + " and dataverse user : " + dvnTdrUser.getDvnUser());
         return null;
     }
 
@@ -99,9 +114,23 @@ public class ArchivingReportDao {
         try {
             return (List<ArchivingReport>) query.getResultList();
         } catch (NoResultException nre) {
-            //Ignore this because as per your logic this is ok!
+            //Ignore this because as per our logic this is ok!
         }
         LOG.info("No reporting data found with status " + status);
+        return null;
+    }
+
+    public ArchivingReport  findByDatasetDvnTdrUserIds(String dataset, List<DvnTdrUser> dvnTdrUsers) {
+        Query query = entityManager.createQuery(
+                "from ArchivingReport where dataset = :dataset and dvnTdrUser in :dvnTdrUsers")
+                .setParameter("dataset", dataset)
+                .setParameter("dvnTdrUsers", dvnTdrUsers);
+        try {
+            return (ArchivingReport) query.getSingleResult();
+        } catch (NoResultException nre) {
+            //Ignore this because as per our logic this is ok!
+        }
+        LOG.info("No reporting data found for dataset: " + dataset);
         return null;
     }
 }

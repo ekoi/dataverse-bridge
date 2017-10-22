@@ -53,7 +53,6 @@ public class IngestToEasy implements IDataverseIngest {
                 LOG.error("FAILED. Status = " + response.getStatusLine());
                 LOG.error("Response body follows:");
                 LOG.error(bodyText);
-                System.exit(2);
             }
             LOG.info("SUCCESS. Deposit receipt follows:");
             sb.append("<bodyText>");
