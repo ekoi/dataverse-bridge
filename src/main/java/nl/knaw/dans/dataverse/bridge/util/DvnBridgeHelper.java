@@ -35,7 +35,7 @@ import java.util.Optional;
 NOTES: The most part of the original code comes from
 https://github.com/DANS-KNAW/easy-sword2-dans-examples/blob/master/src/main/java/nl/knaw/dans/easy/sword2examples/Common.java
  */
-public class Misc {
+public class DvnBridgeHelper {
     static final String BAGIT_URI = "http://purl.org/net/sword/package/BagIt";
     static final BagFactory bagFactory = new BagFactory();
 
