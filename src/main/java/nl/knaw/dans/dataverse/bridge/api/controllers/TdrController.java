@@ -2,8 +2,7 @@ package nl.knaw.dans.dataverse.bridge.api.controllers;
 
 import nl.knaw.dans.dataverse.bridge.db.dao.TdrDao;
 import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
-import nl.knaw.dans.dataverse.bridge.util.EmptyJsonResponse;
-import nl.knaw.dans.dataverse.bridge.util.Misc;
+import nl.knaw.dans.dataverse.bridge.util.DvnBridgeHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -79,7 +78,7 @@ public class TdrController {
         if (tdr != null)
             return new ResponseEntity(tdr, HttpStatus.OK);
 
-        return Misc.emptyJsonResponse();
+        return DvnBridgeHelper.emptyJsonResponse();
     }
 
     /**

@@ -4,7 +4,8 @@ import nl.knaw.dans.dataverse.bridge.db.dao.DvnTdrUserDao;
 import nl.knaw.dans.dataverse.bridge.db.dao.TdrDao;
 import nl.knaw.dans.dataverse.bridge.db.domain.DvnTdrUser;
 import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
-import nl.knaw.dans.dataverse.bridge.util.Misc;
+import nl.knaw.dans.dataverse.bridge.util.DvnBridgeHelper;
+import nl.knaw.dans.dataverse.bridge.util.EmptyJsonResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,19 +42,14 @@ public class DvnTdrUserController {
             value = "/create",
             method = RequestMethod.POST,
             params = {"dvnUser", "dvnUserApitoken", "tdrUsername", "tdrPassword", "tdrName"})
-    @ResponseBody
-    public DvnTdrUser create(String dvnUser, String dvnUserApitoken, String tdrUsername, String tdrPassword, String tdrName) {
-        try {
-            Tdr tdr = tdrDao.getByName(tdrName);
-            if (tdr == null)
-                return null;
-            DvnTdrUser dvnTdrUser = new DvnTdrUser(dvnUser, dvnUserApitoken, tdrUsername, tdrPassword, tdr);
-            dvnTdrUserDao.create(dvnTdrUser);
-            return dvnTdrUser;
-        } catch (Exception ex) {
+    public ResponseEntity create(String dvnUser, String dvnUserApitoken, String tdrUsername, String tdrPassword, String tdrName) {
+        Tdr tdr = tdrDao.getByName(tdrName);
+        if (tdr == null)
+            return new ResponseEntity(new EmptyJsonResponse(), HttpStatus.BAD_REQUEST);
+        DvnTdrUser dvnTdrUser = new DvnTdrUser(dvnUser, dvnUserApitoken, tdrUsername, tdrPassword, tdr);
+        dvnTdrUserDao.create(dvnTdrUser);
+        return new ResponseEntity(dvnTdrUser, HttpStatus.CREATED);
 
-        }
-        return null;
     }
 
     /**
@@ -63,15 +59,12 @@ public class DvnTdrUserController {
             value = "/delete",
             method = RequestMethod.DELETE,
             params = {"id"})
-    @ResponseBody
-    public String delete(long id) {
-        try {
-            DvnTdrUser dvnTdrUser = new DvnTdrUser(id);
-            dvnTdrUserDao.delete(dvnTdrUser);
-        } catch (Exception ex) {
-            return "Error deleting the dvnTdrUser: " + ex.toString();
-        }
-        return "Tdr succesfully deleted!";
+    public ResponseEntity<Void> delete(long id) {
+
+        DvnTdrUser dvnTdrUser = new DvnTdrUser(id);
+        dvnTdrUserDao.delete(dvnTdrUser);
+        return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
+
     }
 
     /**
@@ -109,7 +102,7 @@ public class DvnTdrUserController {
     public ResponseEntity getByName(String dvnUser) {
         List<DvnTdrUser> dvnTdrUsers = dvnTdrUserDao.getByDvnUsername(dvnUser);
         if (dvnTdrUsers == null || dvnTdrUsers.isEmpty())
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
 
         return new ResponseEntity(dvnTdrUsers, HttpStatus.OK);
     }
@@ -124,11 +117,11 @@ public class DvnTdrUserController {
     public ResponseEntity getByNameAndTdr(@PathVariable String tdrname, String dvnUser) {
         Tdr tdr = tdrDao.getByName(tdrname);
         if (tdr == null)
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
 
         DvnTdrUser dvnTdrUser = dvnTdrUserDao.getByDvnUserAndTdrName(dvnUser, tdr.getId());
         if (dvnTdrUser == null)
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
         return new ResponseEntity(dvnTdrUser, HttpStatus.OK);
     }
 
@@ -143,11 +136,11 @@ public class DvnTdrUserController {
 
         Tdr tdr = tdrDao.getByName(tdrname);
         if (tdr == null)
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
 
         List<DvnTdrUser> dvnTdrUsers = dvnTdrUserDao.getByTdrName(tdr);
         if (dvnTdrUsers == null || dvnTdrUsers.isEmpty())
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
 
         return new ResponseEntity(dvnTdrUsers, HttpStatus.OK);
 

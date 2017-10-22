@@ -84,7 +84,7 @@ public class DvnTdrUserDao {
         try {
             return (DvnTdrUser) query.getSingleResult();
         } catch (NoResultException nre) {
-            //Ignore this because as per our logic this is ok!
+            //Ignore this because as per your logic this is ok!
         }
         return null;
     }
@@ -96,7 +96,7 @@ public class DvnTdrUserDao {
         try {
             return (List<DvnTdrUser>) query.getResultList();
         } catch (NoResultException nre) {
-            //Ignore this because as per our logic this is ok!
+            //Ignore this because as per your logic this is ok!
         }
         return null;
     }
@@ -108,7 +108,7 @@ public class DvnTdrUserDao {
         try {
             return (List<DvnTdrUser>) query.getResultList();
         } catch (NoResultException nre) {
-            //Ignore this because as per our logic this is ok!
+            //Ignore this because as per your logic this is ok!
         }
         return null;
     }

@@ -6,8 +6,8 @@ import nl.knaw.dans.dataverse.bridge.db.dao.TdrDao;
 import nl.knaw.dans.dataverse.bridge.db.domain.ArchivingReport;
 import nl.knaw.dans.dataverse.bridge.db.domain.DvnTdrUser;
 import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
+import nl.knaw.dans.dataverse.bridge.util.DvnBridgeHelper;
 import nl.knaw.dans.dataverse.bridge.util.EmptyJsonResponse;
-import nl.knaw.dans.dataverse.bridge.util.Misc;
 import nl.knaw.dans.dataverse.bridge.util.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -48,17 +48,13 @@ public class ArchivingReportController {
             value = "/create",
             method = RequestMethod.POST,
             params = {"hdl", "status", "version", "dvnTdrUserId"})
-
-    public ArchivingReport create(String hdl, String status, int version, int dvnTdrUserId) {
-        ArchivingReport ar = null;
-        try {
-            DvnTdrUser dvnTdrUser = dvnTdrUserDao.getById(dvnTdrUserId);
-            ar = new ArchivingReport(hdl, Status.valueOf(status), version, dvnTdrUser);
-            archivingReportDao.create(ar);
-        } catch (Exception ex) {
-            //return "Error creating the archivingRepository: " + ex.toString();
-        }
-        return ar;
+    public ResponseEntity create(String hdl, String status, int version, int dvnTdrUserId) {
+        DvnTdrUser dvnTdrUser = dvnTdrUserDao.getById(dvnTdrUserId);
+        if (dvnTdrUser == null)
+            return new ResponseEntity(new EmptyJsonResponse(), HttpStatus.BAD_REQUEST);
+        ArchivingReport archivingReport = new ArchivingReport(hdl, Status.valueOf(status), version, dvnTdrUser);
+        archivingReportDao.create(archivingReport);
+        return new ResponseEntity(archivingReport, HttpStatus.CREATED);
     }
 
     /**
@@ -68,17 +64,11 @@ public class ArchivingReportController {
             value = "/delete",
             method = RequestMethod.DELETE,
             params = {"id"})
-    @ResponseBody
-    public String delete(long id) {
-        try {
+    public ResponseEntity<Void> delete(long id) {
             ArchivingReport archivingReport = new ArchivingReport(id);
             archivingReportDao.delete(archivingReport);
-        } catch (Exception ex) {
-            return "Error deleting the archivingReport: " + ex.toString();
-        }
-        return "ArchivingReport succesfully deleted!";
+            return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
     }
-
     //@RequestParam(value="name", required=false, defaultValue="Stranger")
 
     /**
@@ -88,20 +78,15 @@ public class ArchivingReportController {
             value = "/update",
             method = RequestMethod.PUT,
             params = {"id", "doi", "status", "landingpage", "report"})
-    @ResponseBody
-    public String updateName(long id, String doi, String status, String landingpage, String report) {
-        try {
-            ArchivingReport archivingReport = archivingReportDao.getById(id);
-            archivingReport.setDoi(doi);
-            archivingReport.setStatus(status);
-            archivingReport.setLandingpage(landingpage);
-            archivingReport.setReport(report);
-            archivingReport.setEndIngestTime(new Date());
-            archivingReportDao.update(archivingReport);
-        } catch (Exception ex) {
-            return "Error updating the archivingReport: " + ex.toString();
-        }
-        return "ArchivingReport succesfully updated!";
+    public ResponseEntity updateArchivingReport(long id, String doi, String status, String landingpage, String report) {
+        ArchivingReport archivingReport = archivingReportDao.getById(id);
+        archivingReport.setDoi(doi);
+        archivingReport.setStatus(status);
+        archivingReport.setLandingpage(landingpage);
+        archivingReport.setReport(report);
+        archivingReport.setEndIngestTime(new Date());
+        archivingReportDao.update(archivingReport);
+        return new ResponseEntity(archivingReport, HttpStatus.OK);
     }
 
     @RequestMapping(
@@ -113,21 +98,21 @@ public class ArchivingReportController {
         if (archivingReports != null && !archivingReports.isEmpty())
             return new ResponseEntity(archivingReports, HttpStatus.OK);
 
-        return Misc.emptyJsonResponse();
+        return DvnBridgeHelper.emptyJsonResponse();
     }
 
     @RequestMapping(
             value = "/get-ingested-datasets/{status}",
             method = RequestMethod.GET)
     public ResponseEntity getAllIngestedDatasetsWithStatus(@PathVariable String status) {
-        Optional<Status> givenStatus = Misc.valueOf(Status.class, status);
+        Optional<Status> givenStatus = DvnBridgeHelper.valueOf(Status.class, status);
         if (givenStatus.isPresent()) {
             List<ArchivingReport> archivingReports = archivingReportDao.getAllIngestedDatasetsByStatus(Status.valueOf(status));
             if (archivingReports != null && !archivingReports.isEmpty())
                 return new ResponseEntity(archivingReports, HttpStatus.OK);
         }
 
-        return Misc.emptyJsonResponse();
+        return DvnBridgeHelper.emptyJsonResponse();
     }
 
     /**
@@ -141,15 +126,15 @@ public class ArchivingReportController {
 
         Tdr tdr = tdrDao.getByName(tdrname);
         if (tdr == null)
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
 
         DvnTdrUser dvnTdrUser = dvnTdrUserDao.getByDvnUserAndTdrName(dvnUser, tdr.getId());
         if (dvnTdrUser == null)
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
 
         ArchivingReport archivingReport = archivingReportDao.findByDatasetAndStatusAndDvnTdrUserId(dataset, Status.ARCHIVED, dvnTdrUser);
         if (archivingReport == null)
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
 
         return new ResponseEntity(archivingReport, HttpStatus.OK);
     }
@@ -165,15 +150,15 @@ public class ArchivingReportController {
     public ResponseEntity getArchivingReportByDatasetAndTdr(@PathVariable String tdrname, String dataset) {
         Tdr tdr = tdrDao.getByName(tdrname);
         if (tdr == null)
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
 
         List<DvnTdrUser> dvnTdrUsers = dvnTdrUserDao.getByTdrName(tdr);
         if (dvnTdrUsers == null || dvnTdrUsers.isEmpty())
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
 
         ArchivingReport archivingReport = archivingReportDao.findByDatasetDvnTdrUserIds(dataset, dvnTdrUsers);
         if (archivingReport == null)
-            return Misc.emptyJsonResponse();
+            return DvnBridgeHelper.emptyJsonResponse();
 
         return new ResponseEntity(archivingReport, HttpStatus.OK);
     }

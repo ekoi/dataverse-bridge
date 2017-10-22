@@ -19,7 +19,7 @@ import nl.knaw.dans.dataverse.bridge.db.domain.DvnTdrUser;
 import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.IDataverseIngest;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy.IngestToEasy;
-import nl.knaw.dans.dataverse.bridge.util.Misc;
+import nl.knaw.dans.dataverse.bridge.util.DvnBridgeHelper;
 import nl.knaw.dans.dataverse.bridge.util.Status;
 import org.apache.abdera.i18n.iri.IRI;
 import org.apache.commons.io.FileUtils;
@@ -35,8 +35,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.w3c.dom.Document;
 
 import javax.json.JsonObject;
 import javax.json.JsonReader;
@@ -82,14 +80,14 @@ public class DataverseBridgeController {
         Tdr tdr = tdrDao.getByName(tdrName);
         if (tdr == null) {
             LOG.error("ERROR no Trust Digital Repository with the name '" + tdrName + "'");
-            return new ResponseEntity(Misc.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
+            return new ResponseEntity(DvnBridgeHelper.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
 
         }
 
         DvnTdrUser dvnTdrUser = dvnTdrUserDao.getByDvnUserAndTdrName(dvnUser, tdr.getId());
         if (dvnTdrUser == null){
             LOG.error("ERROR no Dataverse user '" + dvnUser + "' and Trust Digital Repository name '" + tdrName + "'");
-            return new ResponseEntity(Misc.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
+            return new ResponseEntity(DvnBridgeHelper.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
         }
         Environment env = context.getEnvironment();
         XsltDvn2TdrTransformer xdeit = new XsltDvn2TdrTransformer(
@@ -99,24 +97,24 @@ public class DataverseBridgeController {
         DdiParser dp = new DdiParser(xdeit.getDocument());
         DvnBridgeDataset dvnBridgeDataset = dp.parse();
 
-        ArchivingReport ar = archivingReportDao.findByDatasetAndVersionAndDvnTdrUserId(dvnBridgeDataset.getPid(), dvnBridgeDataset.getVersion(), dvnTdrUser);
+        ArchivingReport archivingReport = archivingReportDao.findByDatasetAndVersionAndDvnTdrUserId(dvnBridgeDataset.getPid(), dvnBridgeDataset.getVersion(), dvnTdrUser);
 
-        StringBuffer dvnData = new StringBuffer();
+        //StringBuffer dvnData = new StringBuffer();
 
-        if (ar == null) { //The dataset isn't exported to a repo yet.
+        if (archivingReport == null) { //The dataset isn't exported to a repo yet.
 
             java.nio.file.Path bagTempDir = xdeit.createTempDirectory();
             LOG.info("Temporary bag directory: " + bagTempDir);
 
             List<DvnFile> dvnFiles = dvnBridgeDataset.getFiles();
-            dvnData.append("<files>");
+//            dvnData.append("<files>");
             for (DvnFile dvnFile : dvnFiles) {
                 dvnFile.setFilepath("data/" + dvnFile.getTitle());
                 File dvnFileForIngest = new File(bagTempDir + "/" + dvnFile.getTitle());
-                dvnData.append("<file><id>" + dvnFile.getId() + "</id><dvnFileUri>" + dvnFile.getDvnFileUri() + "</dvnFileUri>"
-                        + "<dvnFilename>" + dvnFile.getTitle() + "</dvnFilename>"
-                        + "<filesytemname>" + dvnFile.getFilesytemname() + "</filesytemname>"
-                        + "<absolutePathCopiedFileForIngest>" + dvnFileForIngest + "</absolutePathCopiedFileForIngest></file>");
+//                dvnData.append("<file><id>" + dvnFile.getId() + "</id><dvnFileUri>" + dvnFile.getDvnFileUri() + "</dvnFileUri>"
+//                        + "<dvnFilename>" + dvnFile.getTitle() + "</dvnFilename>"
+//                        + "<filesytemname>" + dvnFile.getFilesytemname() + "</filesytemname>"
+//                        + "<absolutePathCopiedFileForIngest>" + dvnFileForIngest + "</absolutePathCopiedFileForIngest></file>");
                 try {
                     //Check whether the file restricted or not, if it restricted use api-token to download it.
                     String url = dvnFile.getDvnFileUri();
@@ -130,21 +128,21 @@ public class DataverseBridgeController {
                     }
                 } catch (IOException e) {
                     LOG.error("ERROR, msg: " + e.getMessage());
-                    return new ResponseEntity(Misc.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
+                    return new ResponseEntity(DvnBridgeHelper.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
                 }
             }
-            dvnData.append("</files>");
+//            dvnData.append("</files>");
 
 
-            ar = new ArchivingReport(dvnBridgeDataset.getPid(), Status.PROGRESS, dvnBridgeDataset.getVersion(), dvnTdrUser);
-            archivingReportDao.create(ar);
-            long id = ar.getId();
+            archivingReport = new ArchivingReport(dvnBridgeDataset.getPid(), Status.PROGRESS, dvnBridgeDataset.getVersion(), dvnTdrUser);
+            archivingReportDao.create(archivingReport);
+            long id = archivingReport.getId();
             try {
 
                 Flowable.fromCallable(() -> {
                     composeBagit(xdeit, dvnBridgeDataset, bagTempDir);
 
-                    File tempCopy = Misc.copyToTarget(bagTempDir.toFile());
+                    File tempCopy = DvnBridgeHelper.copyToTarget(bagTempDir.toFile());
                     IDataverseIngest di = new IngestToEasy();
                     final String easyResponse = di.execute(tempCopy, new IRI(tdr.getIri()), dvnTdrUser.getTdrUsername(), dvnTdrUser.getTdrPassword());
                     LOG.info(easyResponse);
@@ -171,28 +169,29 @@ public class DataverseBridgeController {
             } catch (Exception e) {
                 LOG.error("Error when ingesting process is running, msg: " + e.getMessage() );
             }
-            LOG.info("hdl-prefix: " + hdlPrefix);
-            dvnData.append("<easyResponse>");
-            dvnData.append("</easyResponse>");
-            return new ResponseEntity("<root><pid><prefix>" + hdlPrefix + "</prefix><hdl>hdl:" + hdlPrefix + "/" + hdl + "</hdl></pid>" + dvnData
-                    + "</root>", HttpStatus.OK);
+//            LOG.info("hdl-prefix: " + hdlPrefix);
+//            dvnData.append("<easyResponse>");
+//            dvnData.append("</easyResponse>");
+//            return new ResponseEntity("<root><pid><prefix>" + hdlPrefix + "</prefix><hdl>hdl:" + hdlPrefix + "/" + hdl + "</hdl></pid>" + dvnData
+//                    + "</root>", HttpStatus.OK);
+            return  new ResponseEntity(archivingReport, HttpStatus.OK);
         } else {
 
-            dvnData.append("<root>");
-            dvnData.append("<id>" + ar.getId() + "</id>");
-            dvnData.append("<identifier>" + ar.getDataset() + "</identifier>");
-            dvnData.append("<version>" + ar.getVersion() + "</version>");
-            dvnData.append("<status>" + ar.getStatus() + "</status>");
-            if (ar.getStatus().equals("ARCHIVED")) {
-                dvnData.append("<ingestedTime>" + ar.getEndIngestTime() + "</ingestedTime>");
-                dvnData.append("<doi>" + ar.getDoi() + "</doi>");
-                dvnData.append("<landingPage>" + ar.getLandingpage() + "</landingPage>");
-            } else {
-                dvnData.append("<startingIngestedTime>" + ar.getStartIngestTime() + "</startingIngestedTime>");
-            }
-            //dvnData.append("<archivedLocation>" + ar.getTargetUrl() + "</archivedLocation>");
-            dvnData.append("</root>");
-            return new ResponseEntity(dvnData, HttpStatus.OK);
+//            dvnData.append("<root>");
+//            dvnData.append("<id>" + archivingReport.getId() + "</id>");
+//            dvnData.append("<identifier>" + archivingReport.getDataset() + "</identifier>");
+//            dvnData.append("<version>" + archivingReport.getVersion() + "</version>");
+//            dvnData.append("<status>" + archivingReport.getStatus() + "</status>");
+//            if (archivingReport.getStatus().equals("ARCHIVED")) {
+//                dvnData.append("<ingestedTime>" + archivingReport.getEndIngestTime() + "</ingestedTime>");
+//                dvnData.append("<doi>" + archivingReport.getDoi() + "</doi>");
+//                dvnData.append("<landingPage>" + archivingReport.getLandingpage() + "</landingPage>");
+//            } else {
+//                dvnData.append("<startingIngestedTime>" + archivingReport.getStartIngestTime() + "</startingIngestedTime>");
+//            }
+//            //dvnData.append("<archivedLocation>" + archivingReport.getTargetUrl() + "</archivedLocation>");
+//            dvnData.append("</root>");
+            return new ResponseEntity(archivingReport, HttpStatus.OK);
         }
     }
 
@@ -216,7 +215,7 @@ public class DataverseBridgeController {
         //In this case, it needs to create files.xml as replacement of the xslt generated files.xml
         List<DvnFile> dfiles = dvnBridgeDataset.getFiles();
         for (DvnFile d : dfiles) {
-            if (d.getAccessRights().equals("RESTRICTED_REQUEST")) {
+            if (d.getAccessRights() != null && d.getAccessRights().equals("RESTRICTED_REQUEST")) {
                 //create files.xml
                 FilesXmlCreator fxc = new FilesXmlCreator();
                 File f = new File(bagTempDir.toString() + "/metadata/files.xml");
