@@ -36,16 +36,10 @@ public class TdrController {
             method = RequestMethod.POST,
             params = {"tdrName", "tdrIri"})
     @ResponseBody
-    public Tdr create(String tdrName
-            , String tdrIri) {
-        try {
-            Tdr tdr = new Tdr(tdrName.toUpperCase(), tdrIri);
-            tdrDao.create(tdr);
-            return tdr;
-        } catch (Exception ex) {
-
-        }
-        return null;
+    public ResponseEntity create(String tdrName, String tdrIri) {
+        Tdr tdr = new Tdr(tdrName.toUpperCase(), tdrIri);
+        tdrDao.create(tdr);
+        return new ResponseEntity(tdr, HttpStatus.CREATED);
     }
 
     /**
@@ -56,14 +50,10 @@ public class TdrController {
             method = RequestMethod.DELETE,
             params = {"id"})
     @ResponseBody
-    public String delete(long id) {
-        try {
-            Tdr tdr = new Tdr(id);
-            tdrDao.delete(tdr);
-        } catch (Exception ex) {
-            return "Error deleting the archivingRepository: " + ex.toString();
-        }
-        return "Tdr succesfully deleted!";
+    public ResponseEntity<Void> delete(long id) {
+        Tdr tdr = new Tdr(id);
+        tdrDao.delete(tdr);
+        return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
     }
 
     /**

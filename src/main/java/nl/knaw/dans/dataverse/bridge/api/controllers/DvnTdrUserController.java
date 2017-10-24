@@ -6,6 +6,8 @@ import nl.knaw.dans.dataverse.bridge.db.domain.DvnTdrUser;
 import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
 import nl.knaw.dans.dataverse.bridge.util.DvnBridgeHelper;
 import nl.knaw.dans.dataverse.bridge.util.EmptyJsonResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +26,7 @@ import java.util.List;
 @RequestMapping("/dvn-tdr-user")
 @Controller
 public class DvnTdrUserController {
-
+    private static final Logger LOG = LoggerFactory.getLogger(DvnTdrUserController.class);
     // Wire the DvnTdrUserDao used inside this controller.
     @Autowired
     private DvnTdrUserDao dvnTdrUserDao;
@@ -44,8 +46,10 @@ public class DvnTdrUserController {
             params = {"dvnUser", "dvnUserApitoken", "tdrUsername", "tdrPassword", "tdrName"})
     public ResponseEntity create(String dvnUser, String dvnUserApitoken, String tdrUsername, String tdrPassword, String tdrName) {
         Tdr tdr = tdrDao.getByName(tdrName);
-        if (tdr == null)
+        if (tdr == null) {
+            LOG.debug(tdrName + "not found");
             return new ResponseEntity(new EmptyJsonResponse(), HttpStatus.BAD_REQUEST);
+        }
         DvnTdrUser dvnTdrUser = new DvnTdrUser(dvnUser, dvnUserApitoken, tdrUsername, tdrPassword, tdr);
         dvnTdrUserDao.create(dvnTdrUser);
         return new ResponseEntity(dvnTdrUser, HttpStatus.CREATED);

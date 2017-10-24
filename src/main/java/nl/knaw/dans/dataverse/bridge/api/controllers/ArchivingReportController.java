@@ -9,6 +9,8 @@ import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
 import nl.knaw.dans.dataverse.bridge.util.DvnBridgeHelper;
 import nl.knaw.dans.dataverse.bridge.util.EmptyJsonResponse;
 import nl.knaw.dans.dataverse.bridge.util.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +31,7 @@ import java.util.Optional;
 @RequestMapping("/archiving-report")
 @Controller
 public class ArchivingReportController {
-
+    private static final Logger LOG = LoggerFactory.getLogger(ArchivingReportController.class);
     // Wire the ArchivingReportDao used inside this controller.
     @Autowired
     private ArchivingReportDao archivingReportDao;
@@ -49,6 +51,7 @@ public class ArchivingReportController {
             method = RequestMethod.POST,
             params = {"hdl", "status", "version", "dvnTdrUserId"})
     public ResponseEntity create(String hdl, String status, int version, int dvnTdrUserId) {
+        LOG.debug("Request URL: " + DvnBridgeHelper.getRequestUrl());
         DvnTdrUser dvnTdrUser = dvnTdrUserDao.getById(dvnTdrUserId);
         if (dvnTdrUser == null)
             return new ResponseEntity(new EmptyJsonResponse(), HttpStatus.BAD_REQUEST);
@@ -105,6 +108,7 @@ public class ArchivingReportController {
             value = "/get-ingested-datasets/{status}",
             method = RequestMethod.GET)
     public ResponseEntity getAllIngestedDatasetsWithStatus(@PathVariable String status) {
+        LOG.debug("Request URL: " + DvnBridgeHelper.getRequestUrl());
         Optional<Status> givenStatus = DvnBridgeHelper.valueOf(Status.class, status);
         if (givenStatus.isPresent()) {
             List<ArchivingReport> archivingReports = archivingReportDao.getAllIngestedDatasetsByStatus(Status.valueOf(status));
@@ -123,19 +127,23 @@ public class ArchivingReportController {
             method = RequestMethod.GET,
             params = {"dataset", "dvnUser"})
     public ResponseEntity getArchivingReportByDatasetDvnUserAndTdr(@PathVariable String tdrname, String dvnUser, String dataset) {
+        LOG.debug("Request URL: " + DvnBridgeHelper.getRequestUrl());
 
         Tdr tdr = tdrDao.getByName(tdrname);
-        if (tdr == null)
+        if (tdr == null) {
+            LOG.debug(tdrname + "not found");
             return DvnBridgeHelper.emptyJsonResponse();
-
+        }
         DvnTdrUser dvnTdrUser = dvnTdrUserDao.getByDvnUserAndTdrName(dvnUser, tdr.getId());
-        if (dvnTdrUser == null)
+        if (dvnTdrUser == null) {
+            LOG.debug(dvnUser + "not found");
             return DvnBridgeHelper.emptyJsonResponse();
-
+        }
         ArchivingReport archivingReport = archivingReportDao.findByDatasetAndStatusAndDvnTdrUserId(dataset, Status.ARCHIVED, dvnTdrUser);
-        if (archivingReport == null)
+        if (archivingReport == null) {
+            LOG.info("archivingReport not found.");
             return DvnBridgeHelper.emptyJsonResponse();
-
+        }
         return new ResponseEntity(archivingReport, HttpStatus.OK);
     }
 
@@ -149,9 +157,10 @@ public class ArchivingReportController {
             params = {"dataset"})
     public ResponseEntity getArchivingReportByDatasetAndTdr(@PathVariable String tdrname, String dataset) {
         Tdr tdr = tdrDao.getByName(tdrname);
-        if (tdr == null)
+        if (tdr == null) {
+            LOG.debug(tdrname + "not found");
             return DvnBridgeHelper.emptyJsonResponse();
-
+        }
         List<DvnTdrUser> dvnTdrUsers = dvnTdrUserDao.getByTdrName(tdr);
         if (dvnTdrUsers == null || dvnTdrUsers.isEmpty())
             return DvnBridgeHelper.emptyJsonResponse();
