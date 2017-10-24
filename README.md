@@ -14,8 +14,10 @@ docker build -t dans/dataverse-bridge .
 docker run -p 8592:8592 -d --privileged=true -it --name=dbsrv dans/dataverse-bridge
 
 #access to dbsrv container
-docker exec -it dbsrv java -jar /usr/local/dataverse-bridge/dbsrv.jar
+docker exec -it dbsrv bash
 
+#access to dbsrv container and start it
+ocker exec -it dbsrv java -jar /usr/local/dataverse-bridge/dbsrv.jar
 #The ip address of dbsrv
 docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dbsrv
 
