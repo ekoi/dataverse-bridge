@@ -60,7 +60,6 @@ public class DvnTdrUserController {
             method = RequestMethod.DELETE,
             params = {"id"})
     public ResponseEntity<Void> delete(long id) {
-
         DvnTdrUser dvnTdrUser = new DvnTdrUser(id);
         dvnTdrUserDao.delete(dvnTdrUser);
         return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
@@ -75,21 +74,17 @@ public class DvnTdrUserController {
             value = "/update/{id}",
             method = RequestMethod.PUT,
             params = {"id", "dvnUser", "dvnUserApitoken", "tdrUsername", "tdrPassword"})
-    @ResponseBody
-    public DvnTdrUser updateName(@PathVariable int id, String dvnUser, String dvnUserApitoken
+    public ResponseEntity<Void> updateName(@PathVariable int id, String dvnUser, String dvnUserApitoken
             , String tdrUsername, String tdrPassword) {
-        try {
-            DvnTdrUser dvnTdrUser = dvnTdrUserDao.getById(id);
-            dvnTdrUser.setDvnUser(dvnUser);
-            dvnTdrUser.setDvnUserApitoken(dvnUserApitoken);
-            dvnTdrUser.setTdrUsername(tdrUsername);
-            dvnTdrUser.setTdrPassword(tdrPassword);
-            dvnTdrUserDao.update(dvnTdrUser);
-            return dvnTdrUser;
-        } catch (Exception ex) {
-            //todo
-        }
-        return null;
+        DvnTdrUser dvnTdrUser = dvnTdrUserDao.getById(id);
+        if (dvnTdrUser == null)
+            return new ResponseEntity<Void>(HttpStatus.BAD_REQUEST);
+        dvnTdrUser.setDvnUser(dvnUser);
+        dvnTdrUser.setDvnUserApitoken(dvnUserApitoken);
+        dvnTdrUser.setTdrUsername(tdrUsername);
+        dvnTdrUser.setTdrPassword(tdrPassword);
+        dvnTdrUserDao.update(dvnTdrUser);
+        return new ResponseEntity<Void>(HttpStatus.ACCEPTED);
     }
 
     /*

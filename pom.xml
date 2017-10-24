@@ -10,7 +10,7 @@
     <version>1.0.0-SNAPSHOT</version>
 
     <name>dataverse-bridge</name>
-    <description>Use JPA + Hibernate + Postgres + Swagger with Spring Boot</description>
+    <description>Use JPA + Hibernate + HSQLDB + Swagger with Spring Boot</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -21,9 +21,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <start-class>nl.knaw.dans.dataverse.bridge.Application</start-class>
+        <start-class>nl.knaw.dans.dataverse.bridge.DataverseBridgeApplication</start-class>
         <java.version>1.8</java.version>
-        <postgresql.version>9.4.1212</postgresql.version>
         <springfox.swagger.version>2.7.0</springfox.swagger.version>
         <springfox.swagger.ui.version>2.7.0</springfox.swagger.ui.version>
         <saxon.he.version>9.7.0-18</saxon.he.version>
@@ -48,14 +47,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>${postgresql.version}</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.hsqldb</groupId>
+            <artifactId>hsqldb</artifactId>
+            <version>2.4.0</version>
+            <scope>runtime</scope>
+        </dependency>
 
         <dependency>
             <groupId>io.springfox</groupId>

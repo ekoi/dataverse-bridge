@@ -16,7 +16,7 @@ public class MainController {
     @RequestMapping("/")
     @ResponseBody
     public String index() {
-        return "Dataverse Bridge build based on the following technology: SWORD 2 + JPA + Hibernate + Postgres + Swagger with Spring Boot App started!";
+        return "Dataverse Bridge build based on the following technology: SWORD 2 + JPA + Hibernate + HSQLDB (Encrypted) + Swagger with Spring Boot App started!";
     }
 
 }

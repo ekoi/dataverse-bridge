@@ -24,7 +24,11 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.net.URI;
 import java.security.DigestInputStream;
@@ -105,5 +109,11 @@ public class DvnBridgeHelper {
 
     public static ResponseEntity emptyJsonResponse() {
         return new ResponseEntity(new EmptyJsonResponse(), HttpStatus.OK);
+    }
+
+    public static String getRequestUrl(){
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        HttpServletRequest request = ((ServletRequestAttributes)requestAttributes).getRequest();
+        return request.getRequestURL().toString();
     }
 }
