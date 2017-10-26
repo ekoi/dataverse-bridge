@@ -18,6 +18,11 @@ docker exec -it dbsrv bash
 
 #access to dbsrv container and start it
 ocker exec -it dbsrv java -jar /usr/local/dataverse-bridge/dbsrv.jar
+
+# To detach the tty without exiting the shell,
+# use the escape sequence Ctrl-p + Ctrl-q
+# note: This will continue to exist in a stopped state once exited (see "docker ps -a")
+
 #The ip address of dbsrv
 docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dbsrv
 

@@ -2,6 +2,7 @@ package nl.knaw.dans.dataverse.bridge.converter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -14,6 +15,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
@@ -41,21 +43,23 @@ public class XsltDvn2TdrTransformer {
     public XsltDvn2TdrTransformer(String ddiEportUrl, String xslBaseUrl) {
         this.DDI_EXPORT_URL = ddiEportUrl;
         this.XSL_BASE_URL = xslBaseUrl;
+        LOG.info("Entering XsltDvn2TdrTransformer... ddiEportUrl: " + ddiEportUrl + " xslBaseUrl: " +xslBaseUrl);
         init();
     }
 
     private void init() {
         TransformerFactory transFact = new net.sf.saxon.TransformerFactoryImpl();
-        Source srcXsltDataset = new StreamSource(XSL_BASE_URL + "/dvn-ddi2ddm-dataset.xsl");
-        Source srcXsltFiles = new StreamSource(XSL_BASE_URL + "/dvn-ddi2ddm-files.xsl");
-        LOG.info("srcXsltDataset: " + srcXsltDataset);
-        LOG.info("srcXsltFiles: " + srcXsltFiles);
-
         try {
+            Source srcXsltDataset = new StreamSource(new ClassPathResource(XSL_BASE_URL+ "/dvn-ddi2ddm-dataset.xsl").getInputStream());
+            Source srcXsltFiles = new StreamSource(new ClassPathResource(XSL_BASE_URL + "/dvn-ddi2ddm-files.xsl").getInputStream());
+            LOG.info("srcXsltDataset: " + srcXsltDataset);
+            LOG.info("srcXsltFiles: " + srcXsltFiles);
             cachedXSLTDataset = transFact.newTemplates(srcXsltDataset);
             cachedXSLTFiles = transFact.newTemplates(srcXsltFiles);
         } catch (TransformerConfigurationException e) {
             LOG.error("ERROR: TransformerConfigurationException, caused by: " + e.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

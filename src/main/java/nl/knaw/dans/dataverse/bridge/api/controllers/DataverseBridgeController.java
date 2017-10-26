@@ -103,21 +103,22 @@ public class DataverseBridgeController {
             return new ResponseEntity(DvnBridgeHelper.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
         }
 
-        if(!isValidTdrCredentials(tdr.getIri(), dvnTdrUser.getTdrUsername(), dvnTdrUser.getTdrPassword()))
+        if(!isValidTdrCredentials(tdr.getIri(), dvnTdrUser.getTdrUsername(), dvnTdrUser.getTdrPassword())) {
+            LOG.error("ERROR, Invallid TDR CREDENTIALS for user '" + dvnUser + "' and Trust Digital Repository name '" + tdrName + "'");
             return new ResponseEntity(DvnBridgeHelper.emptyJsonResponse(), HttpStatus.FORBIDDEN);//Just temporary. Not the right way.
-
+        }
         Environment env = context.getEnvironment();
         XsltDvn2TdrTransformer xdeit = new XsltDvn2TdrTransformer(
                             env.getProperty("dataverse.ddi.export.url") + hdlPrefix + "/" + hdl
                                         , env.getProperty("dataverse.bridge.base.xsl.url"));
-
+        LOG.info("Parsing....");
         DdiParser dp = new DdiParser(xdeit.getDocument());
         DvnBridgeDataset dvnBridgeDataset = dp.parse();
-
+        LOG.info("Parsing is done...");
         ArchivingReport archivingReport = archivingReportDao.findByDatasetAndVersionAndDvnTdrUserId(dvnBridgeDataset.getPid(), dvnBridgeDataset.getVersion(), dvnTdrUser);
 
         if (archivingReport == null) { //The dataset isn't exported to a repo yet.
-
+            LOG.info("No archiving report for " + dvnBridgeDataset.getPid());
             java.nio.file.Path bagTempDir = xdeit.createTempDirectory();
             LOG.info("Temporary bag directory: " + bagTempDir);
 
@@ -128,8 +129,8 @@ public class DataverseBridgeController {
                 try {
                     //Check whether the file restricted or not, if it restricted use api-token to download it.
                     String url = dvnFile.getDvnFileUri();
-                    //Since the files are located on the Dataverse production production, replace to dataverse.nl
-                    url = url.replace("test.dataverse.nl","dataverse.nl");
+                    //In our dataverse test server, the files are located on the Dataverse production production, so use the given file location
+                    url = url.replaceAll("http([^<]*)/api/access/datafile", env.getProperty("dataverse.files.location"));
                     if (checkFilePermission(url) == FilePermissionStatus.RESTRICTED) {
                         dvnFile.setAccessRights("RESTRICTED_REQUEST");
                         FileUtils.copyURLToFile(new URL(url + "?key=" + dvnTdrUser.getDvnUserApitoken()), dvnFileForIngest);
