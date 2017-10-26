@@ -110,6 +110,9 @@ public class DvnBridgeHelper {
     public static ResponseEntity emptyJsonResponse() {
         return new ResponseEntity(new EmptyJsonResponse(), HttpStatus.OK);
     }
+    public static ResponseEntity emptyJsonResponseBadReq() {
+        return new ResponseEntity(new EmptyJsonResponse(), HttpStatus.BAD_REQUEST);
+    }
 
     public static String getRequestUrl(){
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();

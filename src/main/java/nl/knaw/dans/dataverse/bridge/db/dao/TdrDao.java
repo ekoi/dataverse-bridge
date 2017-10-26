@@ -83,4 +83,8 @@ public class TdrDao {
         }
         return null;
     }
-} 
+
+    public Tdr getById(long id) {
+        return entityManager.find(Tdr.class, id);
+    }
+}

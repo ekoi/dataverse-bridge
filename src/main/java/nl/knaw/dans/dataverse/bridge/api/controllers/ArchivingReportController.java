@@ -55,6 +55,7 @@ public class ArchivingReportController {
         DvnTdrUser dvnTdrUser = dvnTdrUserDao.getById(dvnTdrUserId);
         if (dvnTdrUser == null)
             return new ResponseEntity(new EmptyJsonResponse(), HttpStatus.BAD_REQUEST);
+
         ArchivingReport archivingReport = new ArchivingReport(hdl, Status.valueOf(status), version, dvnTdrUser);
         archivingReportDao.create(archivingReport);
         return new ResponseEntity(archivingReport, HttpStatus.CREATED);
@@ -68,7 +69,10 @@ public class ArchivingReportController {
             method = RequestMethod.DELETE,
             params = {"id"})
     public ResponseEntity<Void> delete(long id) {
-            ArchivingReport archivingReport = new ArchivingReport(id);
+            ArchivingReport archivingReport = archivingReportDao.getById(id);
+            if(archivingReport == null)
+                return new ResponseEntity<Void>((HttpStatus.BAD_REQUEST));
+
             archivingReportDao.delete(archivingReport);
             return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
     }
@@ -83,6 +87,9 @@ public class ArchivingReportController {
             params = {"id", "doi", "status", "landingpage", "report"})
     public ResponseEntity updateArchivingReport(long id, String doi, String status, String landingpage, String report) {
         ArchivingReport archivingReport = archivingReportDao.getById(id);
+        if(archivingReport == null)
+            return DvnBridgeHelper.emptyJsonResponseBadReq();
+
         archivingReport.setDoi(doi);
         archivingReport.setStatus(status);
         archivingReport.setLandingpage(landingpage);

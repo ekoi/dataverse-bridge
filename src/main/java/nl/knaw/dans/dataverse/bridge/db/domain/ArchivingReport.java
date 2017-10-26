@@ -11,6 +11,7 @@ import nl.knaw.dans.dataverse.bridge.util.Status;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -24,15 +25,17 @@ public class ArchivingReport implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ManyToOne
-    @JoinColumn(name = "dvn_tdr_id", referencedColumnName = "id", nullable = false)
+    @NotNull
+    @JoinColumn(name = "dvn_tdr_id", referencedColumnName = "id")
     private DvnTdrUser dvnTdrUser;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull
     @Temporal(value = TemporalType.TIMESTAMP)
-    @Column(name = "start_ingest_time", nullable = false)
+    @Column(name = "start_ingest_time")
     private Date startIngestTime;
 
     @Temporal(value = TemporalType.TIMESTAMP)
@@ -42,17 +45,20 @@ public class ArchivingReport implements Serializable {
     @Type(type = "org.hibernate.type.TextType")
     private String report;
 
-    @Column(name = "status", nullable = false)
+    @NotNull
+    @Column(name = "status")
     private String status;
 
     private String landingpage;
 
     private String doi;
 
-    @Column(name = "dataset", nullable = false)
+    @NotNull
+    @Column(name = "dataset")
     private String dataset;
 
-    @Column(name = "version", nullable = false)
+    @NotNull
+    @Column(name = "version")
     private Integer version;
 
     public ArchivingReport() {

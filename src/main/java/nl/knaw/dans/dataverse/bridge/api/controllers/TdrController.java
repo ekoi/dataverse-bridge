@@ -51,7 +51,9 @@ public class TdrController {
             params = {"id"})
     @ResponseBody
     public ResponseEntity<Void> delete(long id) {
-        Tdr tdr = new Tdr(id);
+        Tdr tdr = tdrDao.getById(id);
+        if (tdr == null)
+            return new ResponseEntity<Void>(HttpStatus.BAD_REQUEST);
         tdrDao.delete(tdr);
         return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
     }

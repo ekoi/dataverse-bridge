@@ -94,7 +94,6 @@ public class DataverseBridgeController {
         if (tdr == null) {
             LOG.error("ERROR no Trust Digital Repository with the name '" + tdrName + "'");
             return new ResponseEntity(DvnBridgeHelper.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
-
         }
 
         DvnTdrUser dvnTdrUser = dvnTdrUserDao.getByDvnUserAndTdrName(dvnUser, tdr.getId());
@@ -103,10 +102,6 @@ public class DataverseBridgeController {
             return new ResponseEntity(DvnBridgeHelper.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
         }
 
-        if(!isValidTdrCredentials(tdr.getIri(), dvnTdrUser.getTdrUsername(), dvnTdrUser.getTdrPassword())) {
-            LOG.error("ERROR, Invallid TDR CREDENTIALS for user '" + dvnUser + "' and Trust Digital Repository name '" + tdrName + "'");
-            return new ResponseEntity(DvnBridgeHelper.emptyJsonResponse(), HttpStatus.FORBIDDEN);//Just temporary. Not the right way.
-        }
         Environment env = context.getEnvironment();
         XsltDvn2TdrTransformer xdeit = new XsltDvn2TdrTransformer(
                             env.getProperty("dataverse.ddi.export.url") + hdlPrefix + "/" + hdl
@@ -129,8 +124,10 @@ public class DataverseBridgeController {
                 try {
                     //Check whether the file restricted or not, if it restricted use api-token to download it.
                     String url = dvnFile.getDvnFileUri();
-                    //In our dataverse test server, the files are located on the Dataverse production production, so use the given file location
-                    url = url.replaceAll("http([^<]*)/api/access/datafile", env.getProperty("dataverse.files.location"));
+                    if (hdlPrefix.equals("10411")) {
+                        //In our dataverse test server, the files are located on the Dataverse production production, so use the given file location
+                        url = url.replaceAll("http([^<]*)/api/access/datafile", env.getProperty("dataverse.files.location"));
+                    }
                     if (checkFilePermission(url) == FilePermissionStatus.RESTRICTED) {
                         dvnFile.setAccessRights("RESTRICTED_REQUEST");
                         FileUtils.copyURLToFile(new URL(url + "?key=" + dvnTdrUser.getDvnUserApitoken()), dvnFileForIngest);
@@ -184,26 +181,34 @@ public class DataverseBridgeController {
         }
     }
 
-    private boolean isValidTdrCredentials(String url, String tdrUsername, String tdrPassword) {
+    @RequestMapping(
+            value = "/validate-credential/target/{tdrName}",
+            method = RequestMethod.POST,
+            params = {"tdrUsername", "tdrPassword"})
+    public  ResponseEntity<Void> validateTdrCredentials(@PathVariable String tdrName, String tdrUsername, String tdrPassword) {
+        Tdr tdr = tdrDao.getByName(tdrName);
+        if (tdr == null)
+            return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
+
         CloseableHttpClient client = HttpClients.createDefault();
-        HttpGet httpGet = new HttpGet(url);
+        HttpGet httpGet = new HttpGet(tdr.getIri());
         UsernamePasswordCredentials creds
                 = new UsernamePasswordCredentials(tdrUsername, tdrPassword);
         try {
             httpGet.addHeader(new BasicScheme().authenticate(creds, httpGet, null));
             CloseableHttpResponse response = client.execute(httpGet);
             //only looking for response code.
-            if (response.getStatusLine().getStatusCode() == org.apache.http.HttpStatus.SC_OK)
-                return true;
+            if (HttpStatus.valueOf(response.getStatusLine().getStatusCode()) == HttpStatus.OK)
+                return  new ResponseEntity<Void>(HttpStatus.OK);;
         } catch (AuthenticationException e) {
-            e.printStackTrace();
+            LOG.error("AuthenticationException, msg: " + e.getMessage());
         } catch (ClientProtocolException e) {
-            e.printStackTrace();
+            LOG.error("ClientProtocolException, msg: " + e.getMessage());
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("IOException, msg: " + e.getMessage());
         }
-
-        return false;
+        LOG.error("ERROR, Invallid TDR CREDENTIALS for user '" + tdrUsername + "' and Trust Digital Repository name '" + tdrName + "'");
+        return new ResponseEntity<Void>(HttpStatus.FORBIDDEN);
     }
 
     private void composeBagit(XsltDvn2TdrTransformer xdeit, DvnBridgeDataset dvnBridgeDataset, java.nio.file.Path bagTempDir) {

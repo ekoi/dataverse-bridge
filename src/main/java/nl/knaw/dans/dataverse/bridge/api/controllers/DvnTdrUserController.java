@@ -64,7 +64,10 @@ public class DvnTdrUserController {
             method = RequestMethod.DELETE,
             params = {"id"})
     public ResponseEntity<Void> delete(long id) {
-        DvnTdrUser dvnTdrUser = new DvnTdrUser(id);
+        DvnTdrUser dvnTdrUser = dvnTdrUserDao.getById(id);
+        if(dvnTdrUser == null)
+            return new ResponseEntity<Void>(HttpStatus.BAD_REQUEST);
+
         dvnTdrUserDao.delete(dvnTdrUser);
         return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
 
