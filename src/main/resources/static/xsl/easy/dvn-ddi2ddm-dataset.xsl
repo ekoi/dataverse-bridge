@@ -14,7 +14,7 @@
         xsi:schemaLocation="ddi:codebook:2_5 http://www.ddialliance.org/Specification/DDI-Codebook/2.5/XMLSchema/codebook.xsd"
         version="2.0">
     <xsl:output encoding="UTF-8" indent="yes" method="xml"/>
-    <xsl:variable name="xsd" select="document('narcis-type.xsd')"/>
+    <xsl:variable name="xsd" select="document('http://localhost:8592/xsl/easy/narcis-type.xsd')"/>
     <xsl:template match="/">
         <ddm:DDM>
             <xsl:call-template name="item0"/>

@@ -111,7 +111,6 @@ public class XsltDvn2TdrTransformer {
         LOG.info("bagitDir: " + bagitDir);
         LOG.info("bagitDir absoluth path " + bagitDir.toAbsolutePath());
         metadataDir = Paths.get(bagitDir + "/metadata");
-        String xx = metadataDir.toString();
         try {
             Files.createDirectories(metadataDir);
             createDatasetXmlFile();

@@ -46,6 +46,12 @@ public class DdiParser {
 
             Node otherMatElement = (Node) xPath.evaluate("//*[local-name()='otherMat']", doc, XPathConstants.NODE);
             dvnFiles.add(createDatafile(xPath, otherMatElement));
+            DvnFile dfx = new DvnFile();
+            dfx.setTitle("DANS DataverseBridge Archiving Report.txt");
+            dfx.setDescription("DANS DataverseBridge Archiving Report.");
+            dfx.setDvnFileUri(pid.replace("hdl:", "").replace("/", "-") + ".dbar");
+            dfx.setFormat("text/plain");
+            dvnFiles.add(dfx);
 
             NodeList siblings = (NodeList) xPath.evaluate("following-sibling::*", otherMatElement, XPathConstants.NODESET);
 

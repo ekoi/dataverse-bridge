@@ -57,6 +57,10 @@ import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -111,16 +115,20 @@ public class DataverseBridgeController {
         DvnBridgeDataset dvnBridgeDataset = dp.parse();
         LOG.info("Parsing is done...");
         ArchivingReport archivingReport = archivingReportDao.findByDatasetAndVersionAndDvnTdrUserId(dvnBridgeDataset.getPid(), dvnBridgeDataset.getVersion(), dvnTdrUser);
-
+        StringBuffer sb = new StringBuffer();
         if (archivingReport == null) { //The dataset isn't exported to a repo yet.
             LOG.info("No archiving report for " + dvnBridgeDataset.getPid());
             java.nio.file.Path bagTempDir = xdeit.createTempDirectory();
             LOG.info("Temporary bag directory: " + bagTempDir);
-
             List<DvnFile> dvnFiles = dvnBridgeDataset.getFiles();
+            StringBuffer filenamelist = new StringBuffer();
             for (DvnFile dvnFile : dvnFiles) {
+                if (dvnFile.getDvnFileUri().endsWith(".dbar"))
+                    continue;
+                filenamelist.append(dvnFile.getTitle());
                 dvnFile.setFilepath("data/" + dvnFile.getTitle());
                 File dvnFileForIngest = new File(bagTempDir + "/" + dvnFile.getTitle());
+                sb.append(dvnFile.getTitle() + "\n");
                 try {
                     //Check whether the file restricted or not, if it restricted use api-token to download it.
                     String url = dvnFile.getDvnFileUri();
@@ -139,10 +147,13 @@ public class DataverseBridgeController {
                     return new ResponseEntity(DvnBridgeHelper.emptyJsonResponse(), HttpStatus.BAD_REQUEST);//Just temporary. Not the right way.
                 }
             }
-
+            //Write DANS Dataverse Bridge Archiving Reporting (dans.dbar) file.
+            Object[] dbarData = {hdlPrefix + "/" + hdl, dvnBridgeDataset.getVersion(), dvnUser, sb.toString()};
+            createReportingFile(bagTempDir.toString(), dbarData);
             archivingReport = new ArchivingReport(dvnBridgeDataset.getPid(), Status.PROGRESS, dvnBridgeDataset.getVersion(), dvnTdrUser);
             archivingReportDao.create(archivingReport);
             long id = archivingReport.getId();
+
             try {
 
                 Flowable.fromCallable(() -> {
@@ -150,7 +161,7 @@ public class DataverseBridgeController {
 
                     File tempCopy = DvnBridgeHelper.copyToTarget(bagTempDir.toFile());
                     IDataverseIngest di = new IngestToEasy();
-                    final String easyResponse = di.execute(tempCopy, new IRI(tdr.getIri()), dvnTdrUser.getTdrUsername(), dvnTdrUser.getTdrPassword());
+                    String easyResponse = di.execute(tempCopy, new IRI(tdr.getIri()), dvnTdrUser.getTdrUsername(), dvnTdrUser.getTdrPassword());
                     LOG.info(easyResponse);
                     if (easyResponse == null || easyResponse.isEmpty()) {
                         LOG.error("ERROR no response, please check the target repository.");
@@ -278,6 +289,19 @@ public class DataverseBridgeController {
             LOG.error("IOException, message: " + e.getMessage());
         }
         return FilePermissionStatus.OTHER;
+    }
+
+    private void createReportingFile(String path, Object[] dbarData) {
+
+        String dbarTempate = "{0}\nVerision: {1}\nArchived by: {2}\nDate Time: "
+                +(new SimpleDateFormat("dd-MM-yyyy HH:mm")).format(new Date())+ "\nFiles:\n{3}";
+        MessageFormat fmt = new MessageFormat(dbarTempate);
+        try {
+            String dbarFilename = path + "/" + dbarData[0].toString().replace("hdl:", "").replace("/","-") + ".dbar";
+            Files.write(Paths.get( dbarFilename), fmt.format(dbarData).getBytes());
+        } catch (IOException e) {
+            LOG.error("IOException, msg: " + e.getMessage());
+        }
     }
 
     enum FilePermissionStatus {

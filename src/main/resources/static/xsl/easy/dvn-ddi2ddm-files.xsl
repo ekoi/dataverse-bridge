@@ -10,6 +10,17 @@
     <xsl:template match="/">
         <files>
             <xsl:call-template name="item0"/>
+            <xsl:variable name="s1" select="/ddi:codeBook/ddi:stdyDscr/ddi:citation/ddi:titlStmt/ddi:IDNo"/>
+            <xsl:variable name="s2" select="replace($s1, 'hdl:', '')"/>
+            <xsl:variable name="s3" select="replace($s2, '/', '-')"/>
+            <xsl:element name="file">
+                <xsl:attribute name="filepath" select="concat('data/',$s3, '.dbar')"/>
+                <dcterms:title>DANS DataverseBridge Archiving Report.txt</dcterms:title>
+                <dcterms:description>DANS DataverseBridge Archiving Report.</dcterms:description>
+                <dcterms:format>text/plain</dcterms:format>
+                <dcterms:created><xsl:value-of  select="format-dateTime(current-dateTime(), '[D01]-[M01]-[Y0001]')"/></dcterms:created>
+                <dcterms:accessRights>RESTRICTED_REQUEST</dcterms:accessRights>
+            </xsl:element>
         </files>
     </xsl:template>
 
@@ -21,7 +32,7 @@
                 <dcterms:description><xsl:value-of select="../ddi:txt"/></dcterms:description>
                 <dcterms:format><xsl:value-of select="../ddi:notes"/></dcterms:format>
                 <dcterms:created><xsl:value-of select="/ddi:codeBook/ddi:stdyDscr/ddi:stdyInfo/ddi:depDate"/></dcterms:created>
-                <dcterms:accessRights/>
+                <dcterms:accessRights>RESTRICTED_REQUEST</dcterms:accessRights>
             </xsl:element>
         </xsl:for-each>
     </xsl:template>
