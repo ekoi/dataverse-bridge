@@ -20,7 +20,8 @@ import java.util.Date;
  * Created by Eko Indarto
  */
 @Entity
-@Table(name = "archiving_report")
+@Table(name = "archiving_report", uniqueConstraints =
+@UniqueConstraint(columnNames = {"dataset", "status", "dvn_tdr_id"}))
 public class ArchivingReport implements Serializable {
     private static final long serialVersionUID = 1L;
 

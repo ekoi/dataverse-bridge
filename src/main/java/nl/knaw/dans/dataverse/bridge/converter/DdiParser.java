@@ -1,5 +1,6 @@
 package nl.knaw.dans.dataverse.bridge.converter;
 
+import nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy.DvnBridgeDataset;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public class DdiParser {
             dvnBridgeDataset.setDepositDate(DateTime.parse(depDateNode.getTextContent()));
 
             Node otherMatElement = (Node) xPath.evaluate("//*[local-name()='otherMat']", doc, XPathConstants.NODE);
-            dvnFiles.add(createDatafile(xPath, otherMatElement));
+
             DvnFile dfx = new DvnFile();
             dfx.setTitle("DANS DataverseBridge Archiving Report.txt");
             dfx.setDescription("DANS DataverseBridge Archiving Report.");
@@ -53,11 +54,14 @@ public class DdiParser {
             dfx.setFormat("text/plain");
             dvnFiles.add(dfx);
 
-            NodeList siblings = (NodeList) xPath.evaluate("following-sibling::*", otherMatElement, XPathConstants.NODESET);
+            if (otherMatElement != null) {
+                dvnFiles.add(createDatafile(xPath, otherMatElement));
+                NodeList siblings = (NodeList) xPath.evaluate("following-sibling::*", otherMatElement, XPathConstants.NODESET);
 
-            for (int i = 0; i < siblings.getLength(); ++i) {
-                Node node = siblings.item(i);
-                dvnFiles.add(createDatafile(xPath, node));
+                for (int i = 0; i < siblings.getLength(); ++i) {
+                    Node node = siblings.item(i);
+                    dvnFiles.add(createDatafile(xPath, node));
+                }
             }
 
         } catch (XPathExpressionException e) {

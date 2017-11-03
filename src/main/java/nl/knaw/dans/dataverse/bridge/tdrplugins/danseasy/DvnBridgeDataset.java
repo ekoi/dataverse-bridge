@@ -1,5 +1,6 @@
-package nl.knaw.dans.dataverse.bridge.converter;
+package nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy;
 
+import nl.knaw.dans.dataverse.bridge.converter.DvnFile;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy.EasyFileAttribute;
 import org.joda.time.DateTime;
 

@@ -18,13 +18,14 @@ import nl.knaw.dans.dataverse.bridge.db.domain.ArchivingReport;
 import nl.knaw.dans.dataverse.bridge.db.domain.DvnTdrUser;
 import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.IDataverseIngest;
+import nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy.DvnBridgeDataset;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy.IngestToEasy;
+import nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy.XsltDvn2EasyTdrTransformer;
 import nl.knaw.dans.dataverse.bridge.util.DvnBridgeHelper;
 import nl.knaw.dans.dataverse.bridge.util.Status;
 import org.apache.abdera.i18n.iri.IRI;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
@@ -44,13 +45,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.json.JsonObject;
 import javax.json.JsonReader;
-import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
@@ -107,8 +104,11 @@ public class DataverseBridgeController {
         }
 
         Environment env = context.getEnvironment();
-        XsltDvn2TdrTransformer xdeit = new XsltDvn2TdrTransformer(
-                            env.getProperty("dataverse.ddi.export.url") + hdlPrefix + "/" + hdl
+        String exportUrl= env.getProperty("dataverse.ddi.export.url");
+        if (hdlPrefix.contains("10695"))
+            exportUrl = exportUrl.replace("//dataverse.nl", "//test.dataverse.nl");
+        XsltDvn2EasyTdrTransformer xdeit = new XsltDvn2EasyTdrTransformer(
+                exportUrl + hdlPrefix + "/" + hdl
                                         , env.getProperty("dataverse.bridge.base.xsl.url"));
         LOG.info("Parsing....");
         DdiParser dp = new DdiParser(xdeit.getDocument());
@@ -123,8 +123,10 @@ public class DataverseBridgeController {
             List<DvnFile> dvnFiles = dvnBridgeDataset.getFiles();
             StringBuffer filenamelist = new StringBuffer();
             for (DvnFile dvnFile : dvnFiles) {
-                if (dvnFile.getDvnFileUri().endsWith(".dbar"))
+                if (dvnFile.getDvnFileUri().endsWith(".dbar")) {
+                    dvnFile.setFilepath("data/" + dvnFile.getDvnFileUri());
                     continue;
+                }
                 filenamelist.append(dvnFile.getTitle());
                 dvnFile.setFilepath("data/" + dvnFile.getTitle());
                 File dvnFileForIngest = new File(bagTempDir + "/" + dvnFile.getTitle());
@@ -163,8 +165,14 @@ public class DataverseBridgeController {
                     IDataverseIngest di = new IngestToEasy();
                     String easyResponse = di.execute(tempCopy, new IRI(tdr.getIri()), dvnTdrUser.getTdrUsername(), dvnTdrUser.getTdrPassword());
                     LOG.info(easyResponse);
-                    if (easyResponse == null || easyResponse.isEmpty()) {
+                    if (easyResponse == null || easyResponse.isEmpty() || easyResponse.contains("FAILED")) {
                         LOG.error("ERROR no response, please check the target repository.");
+                        LOG.error(easyResponse);
+                        ArchivingReport ar2 = archivingReportDao.getById(id);
+                        ar2.setReport(easyResponse);
+                        ar2.setStatus(Status.FAILED.toString());
+                        ar2.setEndIngestTime(new Date());
+                        archivingReportDao.update(ar2);
                         //delete the record
                         //archivingReportServiceLocal.deleteById(insertedAr.getId());Don't delete the record but put status and report
                     } else {
@@ -222,7 +230,7 @@ public class DataverseBridgeController {
         return new ResponseEntity<Void>(HttpStatus.FORBIDDEN);
     }
 
-    private void composeBagit(XsltDvn2TdrTransformer xdeit, DvnBridgeDataset dvnBridgeDataset, java.nio.file.Path bagTempDir) {
+    private void composeBagit(XsltDvn2EasyTdrTransformer xdeit, DvnBridgeDataset dvnBridgeDataset, java.nio.file.Path bagTempDir) {
         BagFactory bf = new BagFactory();
         BagInfoCompleter bic = new BagInfoCompleter(bf);
         DefaultCompleter dc = new DefaultCompleter(bf);
@@ -298,6 +306,7 @@ public class DataverseBridgeController {
         MessageFormat fmt = new MessageFormat(dbarTempate);
         try {
             String dbarFilename = path + "/" + dbarData[0].toString().replace("hdl:", "").replace("/","-") + ".dbar";
+            LOG.info(("createReportingFile - dbarFilename: " + dbarFilename));
             Files.write(Paths.get( dbarFilename), fmt.format(dbarData).getBytes());
         } catch (IOException e) {
             LOG.error("IOException, msg: " + e.getMessage());

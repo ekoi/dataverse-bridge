@@ -79,7 +79,7 @@ public class ArchivingReportDao {
 
     public ArchivingReport findByDatasetAndVersionAndDvnTdrUserId(String dataset, int version, DvnTdrUser dvnTdrUser) {
         Query query = entityManager.createQuery(
-                "from ArchivingReport where dataset = :dataset and version = :version and dvnTdrUser = :dvnTdrUser")
+                "from ArchivingReport where status in ('ARCHIVED', 'PROGRESS') and dataset = :dataset and version = :version and dvnTdrUser = :dvnTdrUser")
                 .setParameter("dataset", dataset)
                 .setParameter("version", version)
                 .setParameter("dvnTdrUser", dvnTdrUser);

@@ -1,4 +1,4 @@
-package nl.knaw.dans.dataverse.bridge.converter;
+package nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +15,6 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
@@ -25,8 +24,8 @@ import java.nio.file.Paths;
 /**
  * Created by akmi on 26/04/17.
  */
-public class XsltDvn2TdrTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(XsltDvn2TdrTransformer.class);
+public class XsltDvn2EasyTdrTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(XsltDvn2EasyTdrTransformer.class);
 
     private static String DDI_EXPORT_URL;
     private static String XSL_BASE_URL;
@@ -40,10 +39,10 @@ public class XsltDvn2TdrTransformer {
     private Path bagitDir;
     private Path metadataDir;
 
-    public XsltDvn2TdrTransformer(String ddiEportUrl, String xslBaseUrl) {
+    public XsltDvn2EasyTdrTransformer(String ddiEportUrl, String xslBaseUrl) {
         this.DDI_EXPORT_URL = ddiEportUrl;
         this.XSL_BASE_URL = xslBaseUrl;
-        LOG.info("Entering XsltDvn2TdrTransformer... ddiEportUrl: " + ddiEportUrl + " xslBaseUrl: " +xslBaseUrl);
+        LOG.info("Entering XsltDvn2EasyTdrTransformer... ddiEportUrl: " + ddiEportUrl + " xslBaseUrl: " +xslBaseUrl);
         init();
     }
 
