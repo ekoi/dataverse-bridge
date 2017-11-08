@@ -1,5 +1,6 @@
 package nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy;
 
+import nl.knaw.dans.dataverse.bridge.tdrplugins.XsltDvn2TdrTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -24,25 +25,18 @@ import java.nio.file.Paths;
 /**
  * Created by akmi on 26/04/17.
  */
-public class XsltDvn2EasyTdrTransformer {
+public class XsltDvn2EasyTdrTransformer extends XsltDvn2TdrTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(XsltDvn2EasyTdrTransformer.class);
 
-    private static String DDI_EXPORT_URL;
-    private static String XSL_BASE_URL;
     private Templates cachedXSLTDataset;
     private Templates cachedXSLTFiles;
-    private String datasetXml;
-    private String filesXml;
     private File datasetXmlFile;
     private File filesXmlFile;
     private Document doc;
-    private Path bagitDir;
-    private Path metadataDir;
+
 
     public XsltDvn2EasyTdrTransformer(String ddiEportUrl, String xslBaseUrl) {
-        this.DDI_EXPORT_URL = ddiEportUrl;
-        this.XSL_BASE_URL = xslBaseUrl;
-        LOG.info("Entering XsltDvn2EasyTdrTransformer... ddiEportUrl: " + ddiEportUrl + " xslBaseUrl: " +xslBaseUrl);
+        super(ddiEportUrl, xslBaseUrl);
         init();
     }
 
@@ -68,7 +62,7 @@ public class XsltDvn2EasyTdrTransformer {
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             StringWriter writer = new StringWriter();
             transformer.transform(new DOMSource(doc), new StreamResult(writer));
-            datasetXml = writer.toString();
+            setDatasetXml(writer.toString());
         } catch (TransformerConfigurationException e) {
             e.printStackTrace();
         } catch (TransformerException e) {
@@ -82,24 +76,12 @@ public class XsltDvn2EasyTdrTransformer {
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             StringWriter writer = new StringWriter();
             transformer.transform(new DOMSource(doc), new StreamResult(writer));
-            filesXml = writer.toString();
+            setFilesXml(writer.toString());
         } catch (TransformerConfigurationException e) {
             e.printStackTrace();
         } catch (TransformerException e) {
             e.printStackTrace();
         }
-    }
-
-    public Path createTempDirectory() {
-        try {
-            bagitDir = Files.createTempDirectory("bagit");
-            URI u = bagitDir.toUri();
-            String s = bagitDir.toString();
-            return bagitDir;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;//TODO
     }
 
     public void createMetadata() {
@@ -118,8 +100,7 @@ public class XsltDvn2EasyTdrTransformer {
             e.printStackTrace();
         }
     }
-
-    private void createDatasetXmlFile() {
+    protected void createDatasetXmlFile() {
         datasetXmlFile = new File(metadataDir + "/dataset.xml");
         try {
             datasetXmlFile.createNewFile();
@@ -134,7 +115,7 @@ public class XsltDvn2EasyTdrTransformer {
         }
     }
 
-    private void createFilesXmlFile() {
+    protected void createFilesXmlFile() {
         filesXmlFile = new File(metadataDir + "/files.xml");
         try {
             filesXmlFile.createNewFile();
@@ -143,44 +124,4 @@ public class XsltDvn2EasyTdrTransformer {
             e.printStackTrace();
         }
     }
-
-    public Document getDocument() {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        DocumentBuilder builder;
-        Document doc = null;
-        try {
-            builder = factory.newDocumentBuilder();
-            doc = builder.parse(DDI_EXPORT_URL);
-        } catch (ParserConfigurationException | SAXException | IOException e) {
-            e.printStackTrace();
-        }
-        return doc;
-    }
-
-    public String getDatasetXml() {
-        return datasetXml;
-    }
-
-    public String getFilesXml() {
-        System.out.println(filesXml);
-        return filesXml;
-    }
-
-    public File getDatasetXmlFile() {
-        return datasetXmlFile;
-    }
-
-    public File getFilesXmlFile() {
-        return filesXmlFile;
-    }
-
-    public Path getBagitDir() {
-        return bagitDir;
-    }
-
-    public void setBagitDir(Path bagitDir) {
-        this.bagitDir = bagitDir;
-    }
-
 }

@@ -18,6 +18,7 @@ import nl.knaw.dans.dataverse.bridge.db.domain.ArchivingReport;
 import nl.knaw.dans.dataverse.bridge.db.domain.DvnTdrUser;
 import nl.knaw.dans.dataverse.bridge.db.domain.Tdr;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.IDataverseIngest;
+import nl.knaw.dans.dataverse.bridge.tdrplugins.XsltDvn2TdrTransformer;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy.DvnBridgeDataset;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy.IngestToEasy;
 import nl.knaw.dans.dataverse.bridge.tdrplugins.danseasy.XsltDvn2EasyTdrTransformer;
@@ -107,7 +108,7 @@ public class DataverseBridgeController {
         String exportUrl= env.getProperty("dataverse.ddi.export.url");
         if (hdlPrefix.contains("10695"))
             exportUrl = exportUrl.replace("//dataverse.nl", "//test.dataverse.nl");
-        XsltDvn2EasyTdrTransformer xdeit = new XsltDvn2EasyTdrTransformer(
+        XsltDvn2TdrTransformer xdeit = new XsltDvn2EasyTdrTransformer(
                 exportUrl + hdlPrefix + "/" + hdl
                                         , env.getProperty("dataverse.bridge.base.xsl.url"));
         LOG.info("Parsing....");
@@ -230,7 +231,7 @@ public class DataverseBridgeController {
         return new ResponseEntity<Void>(HttpStatus.FORBIDDEN);
     }
 
-    private void composeBagit(XsltDvn2EasyTdrTransformer xdeit, DvnBridgeDataset dvnBridgeDataset, java.nio.file.Path bagTempDir) {
+    private void composeBagit(XsltDvn2TdrTransformer xdeit, DvnBridgeDataset dvnBridgeDataset, java.nio.file.Path bagTempDir) {
         BagFactory bf = new BagFactory();
         BagInfoCompleter bic = new BagInfoCompleter(bf);
         DefaultCompleter dc = new DefaultCompleter(bf);
