@@ -109,18 +109,11 @@ public class DdiParser {
         if (lablElement != null)
             dvnf.setTitle(lablElement.getTextContent());
 
-        Node txtElement = (Node) xPath.evaluate("./*[local-name()='txt']", otherMatElement, XPathConstants.NODE);
-        if (txtElement != null)
-            dvnf.setDescription(txtElement.getTextContent());
-
-
         Node notesElement = (Node) xPath.evaluate("./*[local-name()='notes']", otherMatElement, XPathConstants.NODE);
         if (notesElement != null)
             dvnf.setFormat(notesElement.getTextContent());
 
         Node depDateElement = (Node) xPath.evaluate("//*[local-name()='depDate']", otherMatElement, XPathConstants.NODE);
-        if (depDateElement != null)
-            dvnf.setCreated(depDateElement.getTextContent());
 
 
         return dvnf;

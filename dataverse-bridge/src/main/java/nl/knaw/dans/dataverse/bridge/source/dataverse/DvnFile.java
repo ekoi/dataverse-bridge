@@ -22,12 +22,9 @@ public class DvnFile {
      */
     private int id;
     private String dvnFileUri;
-    private String filesytemname;
     private String filepath;
     private String title;
-    private String description;
     private String format;
-    private String created;
     private String accessRights;
 
 
@@ -38,15 +35,6 @@ public class DvnFile {
     public void setDvnFileUri(String dvnFileUri) {
         this.dvnFileUri = dvnFileUri;
     }
-
-    public String getFilesytemname() {
-        return filesytemname;
-    }
-
-    public void setFilesytemname(String filesytemname) {
-        this.filesytemname = filesytemname;
-    }
-
 
     public int getId() {
         return id;
@@ -72,28 +60,12 @@ public class DvnFile {
         this.title = title;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
     public String getFormat() {
         return format;
     }
 
     public void setFormat(String format) {
         this.format = format;
-    }
-
-    public String getCreated() {
-        return created;
-    }
-
-    public void setCreated(String created) {
-        this.created = created;
     }
 
     public String getAccessRights() {
@@ -103,6 +75,4 @@ public class DvnFile {
     public void setAccessRights(String accessRights) {
         this.accessRights = accessRights;
     }
-
-
 }

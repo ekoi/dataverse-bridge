@@ -71,20 +71,10 @@ public class EasyFilesXmlCreator {
                 doc.createTextNode(efa.getTitle()));
         file.appendChild(title);
 
-        Element description = doc.createElement("dcterms:description");
-        description.appendChild(
-                doc.createTextNode(efa.getDescription()));
-        file.appendChild(description);
-
         Element format = doc.createElement("dcterms:format");
         format.appendChild(
                 doc.createTextNode(efa.getFormat()));
         file.appendChild(format);
-
-        Element created = doc.createElement("dcterms:created");
-        created.appendChild(
-                doc.createTextNode(efa.getCreated()));
-        file.appendChild(created);
 
         Element accessRights = doc.createElement("dcterms:accessRights");
         accessRights.appendChild(
