@@ -1,0 +1,8 @@
+SERVER STUBS
+To generate in the current location use: -o .
+
+swagger-codegen generate -i dataverse-bridge-api.yaml -l spring -o . -c dataverse-bridge-config.json --import-mappings Archived=nl.knaw.dans.dataverse.bridge.core.db.domain.Archived
+
+
+
+
