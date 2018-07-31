@@ -12,5 +12,5 @@ public interface IDataverseIngest {
 
     public String getLandingPage();
 
-    public String getDoi();
+    public String getPid();
 }
