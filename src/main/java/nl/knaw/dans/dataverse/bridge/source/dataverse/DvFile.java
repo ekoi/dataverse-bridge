@@ -3,7 +3,7 @@ package nl.knaw.dans.dataverse.bridge.source.dataverse;
 /**
  * Created by akmi on 08/05/17.
  */
-public class DvnFile {
+public class DvFile {
     /*
     Example:
     <otherMat ID="f6249" URI="https://dataverse.nl/api/access/datafile/6249" level="datafile">
@@ -31,22 +31,13 @@ public class DvnFile {
     private String accessRights;
 
 
-    public String getDvnFileUri() {
+    public String getDvFileUri() {
         return dvnFileUri;
     }
 
-    public void setDvnFileUri(String dvnFileUri) {
+    public void setDvFileUri(String dvnFileUri) {
         this.dvnFileUri = dvnFileUri;
     }
-
-    public String getFilesytemname() {
-        return filesytemname;
-    }
-
-    public void setFilesytemname(String filesytemname) {
-        this.filesytemname = filesytemname;
-    }
-
 
     public int getId() {
         return id;

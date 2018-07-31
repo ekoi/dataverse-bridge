@@ -5,7 +5,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "_archived", uniqueConstraints =
+@Table(uniqueConstraints =
 @UniqueConstraint(columnNames = {"srcXml", "srcVersion", "targetIri"}))
 public class Archived   {
 
@@ -38,36 +38,6 @@ public class Archived   {
   private Date endTime;
 
   private String landingPage;
-
-  /**
-   * Gets or Sets status
-   */
-  public enum StateEnum {
-    IN_PROGRESS("IN-PROGRESS"),
-    
-    FAILED("FAILED"),
-    
-    ARCHIVED("ARCHIVED");
-
-    private String value;
-
-    StateEnum(String value) {
-      this.value = value;
-    }
-    
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    public static StateEnum fromValue(String text) {
-      for (StateEnum b : StateEnum.values()) {
-        if (String.valueOf(b.value).equals(text)) {
-          return b;
-        }
-      }
-      return null;
-    }
-  }
 
   @NotNull
   private String state;

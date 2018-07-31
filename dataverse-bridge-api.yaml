@@ -49,6 +49,27 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /archive/get-all:
+    get:
+        tags:
+        - "archiving"
+        summary: "peration to retrive all Archived datasets"
+        description: "Operation to retrive all Archived datasets"
+        operationId: "getAll"
+        produces:
+        - application/json
+        responses:
+          '200':
+            description: Plugin response
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/Archived'
+          default:
+            description: unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+
   /archive/create:
     post:
       tags:

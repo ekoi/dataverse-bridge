@@ -11,6 +11,7 @@
     <xsl:template match="ddi:codeBook">
         <files>
             <xsl:call-template name="ddiFile"/>
+            <xsl:call-template name="jsonFile"/>
             <xsl:call-template name="files"/>
         </files>
     </xsl:template>
@@ -31,23 +32,33 @@
             <dcterms:format>application/xml</dcterms:format>
         </xsl:element>
     </xsl:template>
+    <xsl:template name="jsonFile">
+        <xsl:element name="file">
+            <xsl:variable name="fn" select="/ddi:codeBook/ddi:docDscr/ddi:citation/ddi:titlStmt/ddi:IDNo"/>
+            <xsl:variable name="fn2" select="replace($fn,':','-')"/>
+            <xsl:variable name="filename" select="replace($fn2,'/','-')"/>
+            <xsl:attribute name="filepath" select="concat('data/',$filename, '.json')"/>
+            <dcterms:title><xsl:value-of select="$filename"/></dcterms:title>
+            <dcterms:format>application/xml</dcterms:format>
+        </xsl:element>
+    </xsl:template>
     <xsl:template name="files">
         <xsl:for-each select="ddi:otherMat/ddi:labl">
             <xsl:element name="file">
                 <xsl:attribute name="filepath" select="concat('data/',.)"/>
                 <dcterms:format xsi:type="dcterms:IMT"><xsl:value-of select="../ddi:notes[@level='file' and @subject='Content/MIME Type']"/></dcterms:format>
                 <dcterms:title><xsl:value-of select="."/></dcterms:title>
-                
+
                 <!-- description is not used by EASY
                 <xsl:for-each select="../ddi:txt">
                     <dcterms:description><xsl:value-of select="."/></dcterms:description>
                 </xsl:for-each>
                   -->
-                
+
                 <!-- the same for all files in this dataset, so not informative
                 <dcterms:created><xsl:value-of select="/ddi:codeBook/ddi:stdyDscr/ddi:stdyInfo/ddi:depDate"/></dcterms:created>
                 -->
-                
+
                 <!-- No dcterms:accessRights we don't heve those in the ddi, dataset rights are used implicitly ? -->
             </xsl:element>
         </xsl:for-each>

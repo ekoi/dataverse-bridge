@@ -1,7 +1,6 @@
 package nl.knaw.dans.dataverse.bridge.source.dataverse;
 
 import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy.EasyFileAttribute;
-import nl.knaw.dans.dataverse.bridge.source.dataverse.DvnFile;
 import org.joda.time.DateTime;
 
 import java.util.List;
@@ -9,7 +8,7 @@ import java.util.List;
 /**
  * Created by Eko Indarto on 08/05/17.
  */
-public class DvnBridgeDataset {
+public class DvBridgeDataset {
     public String getPid() {
         return pid;
     }
@@ -23,11 +22,11 @@ public class DvnBridgeDataset {
     private DateTime depositDate;
     private String fileLocationDir;
     private int version;
-    private List<DvnFile> files;
+    private List<DvFile> files;
     private List<EasyFileAttribute> easyFileAttribute;
 
 
-    public DvnBridgeDataset(String pid) {
+    public DvBridgeDataset(String pid) {
         setPid(pid);
         identifier = pid.split("/")[1];
         setFileLocationDir(pid.replace("hdl:", ""));
@@ -49,11 +48,11 @@ public class DvnBridgeDataset {
         this.depositDate = depositDate;
     }
 
-    public List<DvnFile> getFiles() {
+    public List<DvFile> getFiles() {
         return files;
     }
 
-    public void setFiles(List<DvnFile> files) {
+    public void setFiles(List<DvFile> files) {
         this.files = files;
     }
 

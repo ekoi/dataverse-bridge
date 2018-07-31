@@ -1,6 +1,8 @@
 package nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy;
 
-import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.IDataverseIngest;
+import nl.knaw.dans.dataverse.bridge.core.util.StateEnum;
+import nl.knaw.dans.dataverse.bridge.ingest.ArchivedObject;
+import nl.knaw.dans.dataverse.bridge.ingest.IDataverseIngest;
 import nl.knaw.dans.dataverse.bridge.core.util.BridgeHelper;
 import org.apache.abdera.i18n.iri.IRI;
 import org.apache.abdera.model.Category;
@@ -31,8 +33,10 @@ public class IngestToEasy implements IDataverseIngest {
     private static final Logger LOG = LoggerFactory.getLogger(IngestToEasy.class);
 
     @Override
-    public String execute(File bagDir, IRI colIri, String uid, String pw) {
+    public ArchivedObject execute(File bagDir, IRI colIri, String uid, String pw) {
+        ArchivedObject archivedObject = new ArchivedObject();
         StringBuffer sb = new StringBuffer("");
+        String state = "";
         // 0. Zip the bagDir
         File zipFile = new File(bagDir.getAbsolutePath() + ".zip");
         zipFile.delete();
@@ -66,15 +70,21 @@ public class IngestToEasy implements IDataverseIngest {
             Link statLink = receipt.getLink("http://purl.org/net/sword/terms/statement");
             IRI statIri = statLink.getHref();
             LOG.info("Stat-IRI = " + statIri);
-            sb.append(trackDeposit(http, statIri.toURI()));
+            state = trackDeposit(http, statIri.toURI());
             // 5. Check statement every ten seconds (a bit too frantic, but okay for this test). If status changes:
             // report new status. If status is an error (INVALID, REJECTED, FAILED) or ARCHIVED: exit.
+            LOG.info(state);
         } catch (Exception e) {
             LOG.error("ERROR: " + e.getMessage());
+            sb.append("\nERROR: " + e.getMessage() + "\n");
+            state = StateEnum.ERROR.toString();
         }
-
-
-        return sb.toString();
+        archivedObject.setLandingPage(getLandingPage());
+        archivedObject.setPid(getPid());
+        archivedObject.setStatus(state);
+        archivedObject.setAuditLogResponse(sb.toString());
+        LOG.info("state: " + state);
+        return archivedObject;
     }
 
     private String trackDeposit(CloseableHttpClient http, URI statUri) throws Exception {
@@ -100,11 +110,11 @@ public class IngestToEasy implements IDataverseIngest {
                 String state = states.get(0).getTerm();
                 LOG.info(state);
                 String doiNumber = "";
-                if (state.equals("INVALID") || state.equals("REJECTED") || state.equals("FAILED")) {
+                if (state.equals(StateEnum.INVALID.toString()) || state.equals(StateEnum.REJECTED.toString()) || state.equals(StateEnum.FAILED.toString())) {
                     LOG.error("FAILURE. Complete statement follows:");
                     LOG.error(bodyText);
                     return (state);
-                } else if (state.equals("ARCHIVED")) {
+                } else if (state.equals(StateEnum.ARCHIVED.toString())) {
                     List<Entry> entries = statement.getEntries();
                     LOG.info("SUCCESS. ");
                     if (entries.size() == 1) {
@@ -136,25 +146,24 @@ public class IngestToEasy implements IDataverseIngest {
                         if (stateText != null && !stateText.isEmpty())
                             stateText = stateText.replace("ui/datasets/easy", "ui/datasets/id/easy");
 
-                        LOG.info("DvnBridgeDataset landing page will be located at: " + stateText);
+                        LOG.info("DvBridgeDataset landing page will be located at: " + stateText);
                         LOG.info("Complete statement follows:");
                         LOG.info(bodyText);
 
                         setLandingPage(stateText);
-                        return "<easyLandingPage>" + stateText + "</easyLandingPage>";
+                        //return "<easyLandingPage>" + stateText + "</easyLandingPage>";
+                        return state;
                     }
                 }
             }
         }
     }
 
-    @Override
-    public String getLandingPage() {
+    private String getLandingPage() {
         return landingPage;
     }
 
-    @Override
-    public String getDoi() {
+    private String getPid() {
         return doi;
     }
 

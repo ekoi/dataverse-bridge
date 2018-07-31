@@ -29,12 +29,14 @@ import java.util.List;
  */
 public class DdiParser {
     private final Document doc;
-    private DvnFile originalDdi;
+    private DvFile exportedDdi;
+    private DvFile exportedJson;
     private static final Logger LOG = LoggerFactory.getLogger(DdiParser.class);
 
-    public DdiParser(Document doc, DvnFile originalDdi) {
+    public DdiParser(Document doc, DvFile exportedDdi, DvFile exportedJson) {
         this.doc = doc;
-        this.originalDdi = originalDdi;
+        this.exportedDdi = exportedDdi;
+        this.exportedJson = exportedJson;
 //        try {
 //            printDocument(doc, System.out);
 //        } catch (IOException e) {
@@ -56,10 +58,11 @@ public class DdiParser {
         transformer.transform(new DOMSource(doc),
                 new StreamResult(new OutputStreamWriter(out, "UTF-8")));
     }
-    public DvnBridgeDataset parse() {
-        DvnBridgeDataset dvnBridgeDataset = null;
-        List<DvnFile> dvnFiles = new ArrayList<DvnFile>();
-        dvnFiles.add(0, originalDdi);
+    public DvBridgeDataset parse() {
+        DvBridgeDataset dvBridgeDataset = null;
+        List<DvFile> dvFiles = new ArrayList<DvFile>();
+        dvFiles.add(0, exportedDdi);
+        dvFiles.add(1, exportedJson);
         XPathFactory xpathFactory = XPathFactory.newInstance();
 
         // Create XPath object
@@ -67,60 +70,60 @@ public class DdiParser {
         try {
             Node pidNode = (Node) xPath.evaluate("//*[local-name()='IDNo']", doc, XPathConstants.NODE);
             String pid = pidNode.getTextContent();
-            dvnBridgeDataset = new DvnBridgeDataset(pid);
+            dvBridgeDataset = new DvBridgeDataset(pid);
 
             Node dvNode = (Node) xPath.evaluate("//*[local-name()='version']", doc, XPathConstants.NODE);
-            dvnBridgeDataset.setVersion(Integer.parseInt(dvNode.getTextContent()));
+            dvBridgeDataset.setVersion(Integer.parseInt(dvNode.getTextContent()));
 
             Node depDateNode = (Node) xPath.evaluate("//*[local-name()='depDate']", doc, XPathConstants.NODE);
-            dvnBridgeDataset.setDepositDate(DateTime.parse(depDateNode.getTextContent()));
+            dvBridgeDataset.setDepositDate(DateTime.parse(depDateNode.getTextContent()));
 
             Node otherMatElement = (Node) xPath.evaluate("//*[local-name()='otherMat']", doc, XPathConstants.NODE);
             if (otherMatElement != null) {
-                dvnFiles.add(createDvnFile(xPath, otherMatElement));
+                dvFiles.add(createDvnFile(xPath, otherMatElement));
 
                 NodeList siblings = (NodeList) xPath.evaluate("following-sibling::*", otherMatElement, XPathConstants.NODESET);
 
                 for (int i = 0; i < siblings.getLength(); ++i) {
                     Node node = siblings.item(i);
-                    dvnFiles.add(createDvnFile(xPath, node));
+                    dvFiles.add(createDvnFile(xPath, node));
                 }
             }
 
         } catch (XPathExpressionException e) {
             e.printStackTrace();
         }
-        if (dvnBridgeDataset != null) {
-            dvnBridgeDataset.setFiles(dvnFiles);
-            return dvnBridgeDataset;
+        if (dvBridgeDataset != null) {
+            dvBridgeDataset.setFiles(dvFiles);
+            return dvBridgeDataset;
         } else
             return null;
     }
 
 
-    private DvnFile createDvnFile(XPath xPath, Node otherMatElement) throws XPathExpressionException {
-        DvnFile dvnf = new DvnFile();
+    private DvFile createDvnFile(XPath xPath, Node otherMatElement) throws XPathExpressionException {
+        DvFile dvnf = new DvFile();
         NamedNodeMap nnm = otherMatElement.getAttributes();
 
-        dvnf.setDvnFileUri(nnm.getNamedItem("URI").getNodeValue());
-        dvnf.setId(Integer.parseInt(dvnf.getDvnFileUri().toString().split("/api/access/datafile/")[1]));
+        dvnf.setDvFileUri(nnm.getNamedItem("URI").getNodeValue());
+        dvnf.setId(Integer.parseInt(dvnf.getDvFileUri().toString().split("/api/access/datafile/")[1]));
 
         Node lablElement = (Node) xPath.evaluate("./*[local-name()='labl']", otherMatElement, XPathConstants.NODE);
         if (lablElement != null)
             dvnf.setTitle(lablElement.getTextContent());
 
-        Node txtElement = (Node) xPath.evaluate("./*[local-name()='txt']", otherMatElement, XPathConstants.NODE);
-        if (txtElement != null)
-            dvnf.setDescription(txtElement.getTextContent());
+//        Node txtElement = (Node) xPath.evaluate("./*[local-name()='txt']", otherMatElement, XPathConstants.NODE);
+//        if (txtElement != null)
+//            dvnf.setDescription(txtElement.getTextContent());
 
 
         Node notesElement = (Node) xPath.evaluate("./*[local-name()='notes']", otherMatElement, XPathConstants.NODE);
         if (notesElement != null)
             dvnf.setFormat(notesElement.getTextContent());
 
-        Node depDateElement = (Node) xPath.evaluate("//*[local-name()='depDate']", otherMatElement, XPathConstants.NODE);
-        if (depDateElement != null)
-            dvnf.setCreated(depDateElement.getTextContent());
+//        Node depDateElement = (Node) xPath.evaluate("//*[local-name()='depDate']", otherMatElement, XPathConstants.NODE);
+//        if (depDateElement != null)
+//            dvnf.setCreated(depDateElement.getTextContent());
 
 
         return dvnf;

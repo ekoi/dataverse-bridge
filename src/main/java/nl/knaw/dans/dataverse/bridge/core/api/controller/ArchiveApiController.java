@@ -9,6 +9,7 @@ import gov.loc.repository.bagit.transformer.impl.ChainingCompleter;
 import gov.loc.repository.bagit.transformer.impl.DefaultCompleter;
 import gov.loc.repository.bagit.transformer.impl.TagManifestCompleter;
 import io.reactivex.Flowable;
+import io.reactivex.functions.Action;
 import io.reactivex.schedulers.Schedulers;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -17,7 +18,9 @@ import io.swagger.annotations.ApiResponses;
 import nl.knaw.dans.dataverse.bridge.core.db.dao.ArchivedDao;
 import nl.knaw.dans.dataverse.bridge.core.db.domain.Archived;
 import nl.knaw.dans.dataverse.bridge.core.bagit.BagInfoCompleter;
-import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.IDataverseIngest;
+import nl.knaw.dans.dataverse.bridge.core.util.StateEnum;
+import nl.knaw.dans.dataverse.bridge.ingest.ArchivedObject;
+import nl.knaw.dans.dataverse.bridge.ingest.IDataverseIngest;
 import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy.EasyFilesXmlCreator;
 import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy.IngestToEasy;
 import nl.knaw.dans.dataverse.bridge.core.util.BridgeHelper;
@@ -103,6 +106,31 @@ public class ArchiveApiController implements ArchiveApi {
     }
 
     @Override
+    @ApiOperation(value = "peration to retrive all Archived datasets", nickname = "getAll", notes = "Operation to retrive all Archived datasets", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, responseContainer = "List", tags={ "archiving", })
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Plugin response", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, responseContainer = "List"),
+            @ApiResponse(code = 200, message = "unexpected error", response = Error.class) })
+    @RequestMapping(value = "/archive/get-all",
+            produces = { "application/json" },
+            method = RequestMethod.GET)
+    public ResponseEntity<List<nl.knaw.dans.dataverse.bridge.core.db.domain.Archived>> getAll() {
+        if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
+            if (getAcceptHeader().get().contains("application/json")) {
+                try {
+                    List<Archived> archiveds = archivedDao.getAll();
+                    return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(archiveds), List.class), HttpStatus.NOT_IMPLEMENTED);
+                } catch (IOException e) {
+                    log.error("Couldn't serialize response for content type application/json", e);
+                    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }
+        } else {
+            log.warn("ObjectMapper or HttpServletRequest not configured in default ArchiveApi interface so no example is generated");
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+    }
+
+    @Override
     @ApiOperation(value = "Operation to retrive a state of an Archived dataset", nickname = "getState", notes = "Operation to retrive a state of an Archived dataset by filtering pid, version, tdr target.", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, tags={ "archiving", })
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Plugin response", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class),
@@ -116,7 +144,6 @@ public class ArchiveApiController implements ArchiveApi {
                 try {
                     Archived dbArchived = archivedDao.getBySrcxmlSrcversionTargetiri(srcXml, srcVersion, targetIri);
                     if (dbArchived == null) {
-                        dbArchived.setState("Eko");
                         return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(dbArchived), nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.NOT_FOUND);
                     }
 
@@ -151,7 +178,7 @@ public class ArchiveApiController implements ArchiveApi {
                                                                                         , ingestData.getTdrData().getIri());
                     if (dbArchived != null) {
                         //existing archived or archiving in progress
-                        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                        return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(dbArchived), nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.OK);
                     }
 
                     if (invalidCredentials(ingestData))
@@ -195,38 +222,74 @@ public class ArchiveApiController implements ArchiveApi {
     private Archived ingestToEASY(String bridgeServerBaseUrl, IngestData ingestData) throws NotFoundException, IOException {
 
         IngestDataComposer ingestDataComposer = new IngestDataComposer(bridgeServerBaseUrl, ingestData).invoke();
-        Dvn2TdrTransformer dvn2TdrTransformer = ingestDataComposer.getDvn2TdrTransformer();
-        DvnBridgeDataset dvnBridgeDataset = ingestDataComposer.getDvnBridgeDataset();
+        Dv2TdrTransformer dv2TdrTransformer = ingestDataComposer.getDv2TdrTransformer();
+        DvBridgeDataset dvBridgeDataset = ingestDataComposer.getDvBridgeDataset();
         Path bagTempDir = ingestDataComposer.getBagTempDir();
 
         Archived archived = createNewArchived(ingestData);
-
+        final ArchivedObjectHolder archivedObjectHolderState = new ArchivedObjectHolder();
         Flowable.fromCallable(() -> {
-            composeBagit(dvn2TdrTransformer, dvnBridgeDataset, bagTempDir);
+            composeBagit(dv2TdrTransformer, dvBridgeDataset, bagTempDir);
 
             File tempCopy = BridgeHelper.copyToTarget(bagTempDir.toFile());
             IDataverseIngest di = new IngestToEasy();
-            final String easyResponse = di.execute(tempCopy, new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
-            LOG.info(easyResponse);
-            if (easyResponse == null || easyResponse.isEmpty()) {
-                LOG.error("ERROR no response, please check the target repository.");
-                //delete the record
-                //archivingReportServiceLocal.deleteById(insertedAr.getId());Don't delete the record but put status and report
-            } else {
-                LOG.info("Update the ArchivingReport record.");
-                archived.setEndTime(new Date());
-                archived.setLandingPage(di.getLandingPage());
-                archived.setDoi(di.getDoi());
-                archived.setState(Archived.StateEnum.ARCHIVED.toString());
-                archivedDao.update(archived);
-            }
-            return easyResponse;
+            final ArchivedObject easyResponse = di.execute(tempCopy, new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
+            archived.setState(StateEnum.IN_PROGRESS.toString());
+            archivedDao.create(archived);
+            archivedObjectHolderState.setArchivedObject(easyResponse);
+            LOG.info("status: " + easyResponse.getStatus());
+            return archived;
         })
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.single())
-                .subscribe(LOG::info, Throwable::printStackTrace);
+                .doOnComplete(new Action() {
+                    @Override
+                    public void run()  {
+                        ArchivedObject ao = archivedObjectHolderState.getArchivedObject();
+                        String status  = ao.getStatus();
+                        archived.setLandingPage(ao.getLandingPage());
+                        archived.setDoi(ao.getPid());
+                        archived.setEndTime(new Date());
+                        archived.setState(ao.getStatus());
+                        LOG.info("Ingest finish. Status " + ao.getStatus());
+                        archivedDao.update(archived);
+                        if (!ao.getStatus().equals(StateEnum.ARCHIVED)) {
+                            //send mail to admin
+                        }
+//                        if (archivedObjectHolderState.getState().equals("SUCCESS")){
+//                            archivedDao.update(archived);
+//                            //check state, it can be failed or archived
+//                            //send mail to ingester
+//                            LOG.info("Archiving finish.");
+//                        } else {
+//                            //rollback
+//                          //  archivedDao.delete(archived);
+//                        }
+                    }
+                })
+                .subscribe();
 
         return archived;
+    }
+    private class ArchivedObjectHolder {
+        private boolean finish;
+        ArchivedObject archivedObject;
+
+        public ArchivedObject getArchivedObject() {
+            return archivedObject;
+        }
+
+        public void setArchivedObject(ArchivedObject archivedObject) {
+            this.archivedObject = archivedObject;
+        }
+
+        public boolean isFinish() {
+            return finish;
+        }
+
+        public void setFinish(boolean finish) {
+            this.finish = finish;
+        }
     }
 
     private Archived createNewArchived(IngestData ingestData) {
@@ -237,13 +300,11 @@ public class ArchiveApiController implements ArchiveApi {
         archived.setSrcAppName(ingestData.getSrcData().getAppName());
         archived.setTargetIri(ingestData.getTdrData().getIri());
         archived.setTdrAppName(ingestData.getTdrData().getAppName());
-        archived.setState(Archived.StateEnum.IN_PROGRESS.toString());
-        archivedDao.create(archived);
         return archived;
     }
 
 
-    private void composeBagit(Dvn2TdrTransformer dvn2TdrTransformer, DvnBridgeDataset dvnBridgeDataset, java.nio.file.Path bagTempDir) throws TransformerException, ParserConfigurationException, IOException {
+    private void composeBagit(Dv2TdrTransformer dv2TdrTransformer, DvBridgeDataset dvBridgeDataset, java.nio.file.Path bagTempDir) throws TransformerException, ParserConfigurationException, IOException {
         BagFactory bf = new BagFactory();
         BagInfoCompleter bic = new BagInfoCompleter(bf);
         DefaultCompleter dc = new DefaultCompleter(bf);
@@ -257,12 +318,12 @@ public class ArchiveApiController implements ArchiveApi {
         pb.makeBagInPlace(BagFactory.Version.V0_97, false, completer);
 
         Bag b = bf.createBag(bagTempDir.toFile());
-        dvn2TdrTransformer.createMetadata();
+        dv2TdrTransformer.createMetadata();
 
         //Check whether the dataset contains at least one restricted file.
         //In this case, it needs to create files.xml as replacement of the xslt generated files.xml
-        List<DvnFile> dfiles = dvnBridgeDataset.getFiles();
-        for (DvnFile d : dfiles) {
+        List<DvFile> dfiles = dvBridgeDataset.getFiles();
+        for (DvFile d : dfiles) {
             if (d.getAccessRights() != null && d.getAccessRights().equals("RESTRICTED_REQUEST")) {
                 //create files.xml
                 EasyFilesXmlCreator fxc = new EasyFilesXmlCreator();
@@ -277,8 +338,8 @@ public class ArchiveApiController implements ArchiveApi {
 
     private class IngestDataComposer {
         private IngestData ingestData;
-        private Dvn2TdrTransformer dvn2TdrTransformer;
-        private DvnBridgeDataset dvnBridgeDataset;
+        private Dv2TdrTransformer dv2TdrTransformer;
+        private DvBridgeDataset dvBridgeDataset;
         private Path bagTempDir;
         private String bridgeServerBaseUrl;
 
@@ -287,12 +348,12 @@ public class ArchiveApiController implements ArchiveApi {
             this.ingestData = ingestData;
         }
 
-        public Dvn2TdrTransformer getDvn2TdrTransformer() {
-            return dvn2TdrTransformer;
+        public Dv2TdrTransformer getDv2TdrTransformer() {
+            return dv2TdrTransformer;
         }
 
-        public DvnBridgeDataset getDvnBridgeDataset() {
-            return dvnBridgeDataset;
+        public DvBridgeDataset getDvBridgeDataset() {
+            return dvBridgeDataset;
         }
 
         public Path getBagTempDir() {
@@ -300,28 +361,27 @@ public class ArchiveApiController implements ArchiveApi {
         }
 
         public IngestDataComposer invoke() throws NotFoundException, IOException {
-            dvn2TdrTransformer = new Dvn2TdrTransformer(ingestData.getSrcData().getSrcXml()
+            dv2TdrTransformer = new Dv2TdrTransformer(ingestData.getSrcData().getSrcXml()
                                                         , new StreamSource(bridgeServerBaseUrl + env.getProperty("bridge.xsl.source.easy.dataset"))
                                                         , new StreamSource(bridgeServerBaseUrl + env.getProperty("bridge.xsl.source.easy.files")));
-            DvnFile originalDdi = createDdiFile();
-            Document ddiDocument = dvn2TdrTransformer.getDocument();
-            DdiParser dp = new DdiParser(ddiDocument, originalDdi);
-            dvnBridgeDataset = dp.parse();
-            bagTempDir = dvn2TdrTransformer.createTempDirectory();
+            Document ddiDocument = dv2TdrTransformer.getDocument();
+            DdiParser dp = new DdiParser(ddiDocument, createExportedDdiFile(), createExportedJsonFile());
+            dvBridgeDataset = dp.parse();
+            bagTempDir = dv2TdrTransformer.createTempDirectory();
             LOG.info("Temporary bag directory: " + bagTempDir);
-            List<DvnFile> dvnFiles = dvnBridgeDataset.getFiles();
+            List<DvFile> dvFiles = dvBridgeDataset.getFiles();
 
-            for (DvnFile dvnFile : dvnFiles) {
-                dvnFile.setFilepath("data/" + dvnFile.getTitle());
-                File dvnFileForIngest = new File(bagTempDir + "/" + dvnFile.getTitle());
+            for (DvFile dvFile : dvFiles) {
+                dvFile.setFilepath("data/" + dvFile.getTitle());
+                File dvnFileForIngest = new File(bagTempDir + "/" + dvFile.getTitle());
                 try {
                     //Check whether the file restricted or not, if it restricted use api-token to download it.
-                    String url = dvnFile.getDvnFileUri();
+                    String url = dvFile.getDvFileUri();
                     //Since the URL of th files is hardcoded to 'https'( see: systemConfg.getDataverseSiteUrl()),
                     // for ddvn, replace to https
-                    url = url.replace("https://ddvn.dans.knaw.nl/","http://ddvn.dans.knaw.nl");
+                    url = url.replace("https://ddvn.dans.knaw.nl","http://ddvn.dans.knaw.nl");
                     if (FilePermissionChecker.check(url) == FilePermissionStatus.RESTRICTED) {
-                        dvnFile.setAccessRights("RESTRICTED_REQUEST");
+                        dvFile.setAccessRights("RESTRICTED_REQUEST");
                         //FileUtils.copyURLToFile(new URL(url + "?key=" + dvnTdrUser.getDvnUserApitoken()), dvnFileForIngest);
                     } else {
                         FileUtils.copyURLToFile(new URL(url), dvnFileForIngest);
@@ -333,18 +393,29 @@ public class ArchiveApiController implements ArchiveApi {
             return this;
         }
 
-        private DvnFile createDdiFile() {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        private DvFile createExportedDvFile(String filename, String url) {
+            DvFile exportedDvFile = new DvFile();
+            exportedDvFile.setTitle(filename);
+            exportedDvFile.setFilepath(filename);
+            exportedDvFile.setDvFileUri(url);
+            return exportedDvFile;
+        }
 
-            String filename = (ingestData.getSrcData().getSrcXml().split("persistentId=")[1])
-                                .replace(":","-")
-                                .replace("/","-") + ".xml";
+        private DvFile createExportedDdiFile() {
+            //ddi xml: http://ddvn.dans.knaw.nl:8080/api/datasets/export?exporter=ddi&persistentId=hdl:12345/JLO8HN
+            return createExportedDvFile(getExportedDvFilename("xml"), ingestData.getSrcData().getSrcXml());
+        }
 
-            DvnFile originalDdi = new DvnFile();
-            originalDdi.setTitle(filename);
-            originalDdi.setFilepath(filename);
-            originalDdi.setDvnFileUri(ingestData.getSrcData().getSrcXml());
-            return originalDdi;
+        private DvFile createExportedJsonFile() {
+            //json: http://ddvn.dans.knaw.nl:8080/api/datasets/:persistentId/?persistentId=hdl:12345/JLO8HN
+            String url = ingestData.getSrcData().getSrcXml().replace("export?exporter=ddi&", ":persistentId/?");
+            return createExportedDvFile(getExportedDvFilename("json"), url);
+        }
+
+        private String getExportedDvFilename(String ext) {
+            return (ingestData.getSrcData().getSrcXml().split("persistentId=")[1])
+                                        .replace(":","-")
+                                        .replace("/","-") + "." + ext;
         }
     }
     public String getDdiDocumentAsString(Document ddiDocument) {

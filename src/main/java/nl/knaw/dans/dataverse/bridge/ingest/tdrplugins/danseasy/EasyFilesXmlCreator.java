@@ -1,6 +1,6 @@
 package nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy;
 
-import nl.knaw.dans.dataverse.bridge.source.dataverse.DvnFile;
+import nl.knaw.dans.dataverse.bridge.source.dataverse.DvFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -24,7 +24,7 @@ import java.util.List;
 public class EasyFilesXmlCreator {
     private static final Logger LOG = LoggerFactory.getLogger(EasyFilesXmlCreator.class);
 
-    public void create(List<DvnFile> efal, File f) throws ParserConfigurationException, TransformerException {
+    public void create(List<DvFile> efal, File f) throws ParserConfigurationException, TransformerException {
             DocumentBuilderFactory dbFactory =
                     DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder =
@@ -34,7 +34,7 @@ public class EasyFilesXmlCreator {
             Element files = doc.createElement("files");
             files.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:dcterms", "http://purl.org/dc/terms/");
             doc.appendChild(files);
-            for (DvnFile efa : efal) {
+            for (DvFile efa : efal) {
                 files.appendChild(createFileElement(doc, efa));
             }
 
@@ -57,7 +57,7 @@ public class EasyFilesXmlCreator {
 
     }
 
-    private Element createFileElement(Document doc, DvnFile efa) {
+    private Element createFileElement(Document doc, DvFile efa) {
 
         Element file = doc.createElement("file");
 
@@ -71,20 +71,10 @@ public class EasyFilesXmlCreator {
                 doc.createTextNode(efa.getTitle()));
         file.appendChild(title);
 
-        Element description = doc.createElement("dcterms:description");
-        description.appendChild(
-                doc.createTextNode(efa.getDescription()));
-        file.appendChild(description);
-
         Element format = doc.createElement("dcterms:format");
         format.appendChild(
                 doc.createTextNode(efa.getFormat()));
         file.appendChild(format);
-
-        Element created = doc.createElement("dcterms:created");
-        created.appendChild(
-                doc.createTextNode(efa.getCreated()));
-        file.appendChild(created);
 
         Element accessRights = doc.createElement("dcterms:accessRights");
         accessRights.appendChild(

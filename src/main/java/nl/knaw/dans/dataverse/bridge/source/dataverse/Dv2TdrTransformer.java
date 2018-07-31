@@ -22,8 +22,8 @@ import java.nio.file.Paths;
 /**
  * Created by akmi on 26/04/17.
  */
-public class Dvn2TdrTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(Dvn2TdrTransformer.class);
+public class Dv2TdrTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(Dv2TdrTransformer.class);
 
     private static String DDI_EXPORT_URL;
     private Templates cachedXSLTDataset;
@@ -36,7 +36,7 @@ public class Dvn2TdrTransformer {
     private Path bagitDir;
     private Path metadataDir;
 
-    public Dvn2TdrTransformer(String ddiEportUrl, Source s1, Source s2) {
+    public Dv2TdrTransformer(String ddiEportUrl, Source s1, Source s2) {
         this.DDI_EXPORT_URL = ddiEportUrl;
         init(s1, s2);
     }
