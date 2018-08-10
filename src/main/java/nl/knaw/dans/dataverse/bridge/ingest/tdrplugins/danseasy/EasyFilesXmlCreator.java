@@ -66,20 +66,24 @@ public class EasyFilesXmlCreator {
         attr.setValue(efa.getFilepath());
         file.setAttributeNode(attr);
 
-        Element title = doc.createElement("dcterms:title");
-        title.appendChild(
-                doc.createTextNode(efa.getTitle()));
-        file.appendChild(title);
+//        Element title = doc.createElement("dcterms:title");
+//        title.appendChild(
+//                doc.createTextNode(efa.getTitle()));
+//        file.appendChild(title);
 
         Element format = doc.createElement("dcterms:format");
         format.appendChild(
                 doc.createTextNode(efa.getFormat()));
         file.appendChild(format);
 
-        Element accessRights = doc.createElement("dcterms:accessRights");
+        Element accessRights = doc.createElement("dcterms:accessibleToRights");
         accessRights.appendChild(
-                doc.createTextNode(efa.getAccessRights()));
+                doc.createTextNode("NONE"));
         file.appendChild(accessRights);
+        Element visibleToRights = doc.createElement("dcterms:visibleToRights");
+        visibleToRights.appendChild(
+                doc.createTextNode("NONE"));
+        file.appendChild(visibleToRights);
 
         return file;
     }

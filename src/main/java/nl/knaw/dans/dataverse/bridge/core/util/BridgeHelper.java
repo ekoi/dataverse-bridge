@@ -57,9 +57,10 @@ public class BridgeHelper {
     }
 
     public static CloseableHttpClient createHttpClient(URI uri, String uid, String pw) {
+        RequestConfig config = RequestConfig.custom().setConnectTimeout(3000).setConnectionRequestTimeout(3000).setSocketTimeout(3000).build();
         BasicCredentialsProvider credsProv = new BasicCredentialsProvider();
         credsProv.setCredentials(new AuthScope(uri.getHost(), uri.getPort()), new UsernamePasswordCredentials(uid, pw));
-        return HttpClients.custom().setDefaultCredentialsProvider(credsProv).build();
+        return HttpClients.custom().setDefaultCredentialsProvider(credsProv).setDefaultRequestConfig(config).build();
     }
 
     public static CloseableHttpResponse sendChunk(DigestInputStream dis, int size, String method, URI uri, String filename, String mimeType, CloseableHttpClient http, boolean inProgress) throws Exception {

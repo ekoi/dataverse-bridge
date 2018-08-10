@@ -1,5 +1,8 @@
 package nl.knaw.dans.dataverse.bridge.core.api.controller;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.loc.repository.bagit.Bag;
 import gov.loc.repository.bagit.BagFactory;
@@ -60,7 +63,6 @@ import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -144,7 +146,8 @@ public class ArchiveApiController implements ArchiveApi {
                 try {
                     Archived dbArchived = archivedDao.getBySrcxmlSrcversionTargetiri(srcXml, srcVersion, targetIri);
                     if (dbArchived == null) {
-                        return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(dbArchived), nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.NOT_FOUND);
+                        LOG.error("The following request is NOT FOUND: srcXml: " + srcXml + "\tsrcVersion: " + srcVersion + "\ttargetIri: " + targetIri);
+                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                     }
 
                     return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(dbArchived), nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.OK);
@@ -181,42 +184,96 @@ public class ArchiveApiController implements ArchiveApi {
                         return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(dbArchived), nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.OK);
                     }
 
-                    if (invalidCredentials(ingestData))
-                        return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-
-                    if (ingestData.getSrcData().getAppName().equals("DATAVERSE") && ingestData.getTdrData().getAppName().equals("EASY")) {
-                        String bridgeServerBaseUrl = "http://" + serverAddress + ":" + serverPort + contextPath + "/";
-                        dbArchived = ingestToEASY(bridgeServerBaseUrl, ingestData);
+                    int statusCode = checkCredentials(ingestData);
+                    switch (statusCode) {
+                        case org.apache.http.HttpStatus.SC_REQUEST_TIMEOUT:
+                            return new ResponseEntity<>(HttpStatus.REQUEST_TIMEOUT);
+                        case org.apache.http.HttpStatus.SC_FORBIDDEN:
+                            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+                        case org.apache.http.HttpStatus.SC_OK:
+                            if (ingestData.getSrcData().getAppName().equals("DATAVERSE") && ingestData.getTdrData().getAppName().equals("EASY")) {
+                                String bridgeServerBaseUrl = "http://" + serverAddress + ":" + serverPort + contextPath + "/";
+                                dbArchived = ingestToEASY(bridgeServerBaseUrl, ingestData);
+                            }
+                            return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(dbArchived), nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.CREATED);
                     }
-                    return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(dbArchived), nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.CREATED);
-                } catch (IOException e) {
-                    if (e.getMessage().contains("Connection timed out")) {
-                        log.error(e.getMessage());
-                        return new ResponseEntity<>(HttpStatus.REQUEST_TIMEOUT);
-                    }
-                    log.error("Couldn't serialize response for content type application/json", e);
                     return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                 } catch (NotFoundException e) {
                     log.error("NotFoundException: " + e.getMessage());
-                    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                 } catch (URISyntaxException e) {
-                        e.printStackTrace();
-                    }
+                    log.error("URISyntaxException: " + e.getMessage());
+                } catch (JsonParseException e) {
+                    log.error("Couldn't serialize response for content type application/json", e);;
+                } catch (JsonMappingException e) {
+                    log.error("JsonMappingException: " + e.getMessage());
+                } catch (JsonProcessingException e) {
+                    log.error("JsonProcessingException: " + e.getMessage());
+                } catch (IOException e) {
+                    log.error("IOException: " + e.getMessage());
                 }
+            }
         } else {
             log.warn("ObjectMapper or HttpServletRequest not configured in default ArchiveApi interface so no example is generated");
         }
-        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    private boolean invalidCredentials(IngestData ingestData) throws URISyntaxException, IOException {
+    @Override
+    @ApiOperation(value = "Deletes a record", nickname = "deleteById", notes = "", tags={ "archiving", })
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Record is deleted"),
+            @ApiResponse(code = 400, message = "Invalid ID supplied"),
+            @ApiResponse(code = 404, message = "Record not found") })
+    @RequestMapping(value = "/archive/delete/{id}",
+            produces = { "application/xml", "application/json" },
+            method = RequestMethod.DELETE)
+    public ResponseEntity<Void> deleteById(@ApiParam(value = "" ,required=true) @RequestHeader(value="api_key", required=true) String apiKey,@ApiParam(value = "Record id to delete",required=true) @PathVariable("id") Long id) {
+        if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
+            Archived dbArchived = archivedDao.getById(id);
+            if (archivedDao != null) {
+                archivedDao.delete(dbArchived);
+                return new ResponseEntity<>(HttpStatus.OK);
+            }
+        } else {
+            log.warn("ObjectMapper or HttpServletRequest not configured in default ArchiveApi interface so no example is generated");
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @Override
+    @ApiOperation(value = "Deletes a record", nickname = "deleteByParams", notes = "", tags={ "archiving", })
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Record is deleted"),
+            @ApiResponse(code = 400, message = "Invalid Paramas supplied"),
+            @ApiResponse(code = 404, message = "Record not found") })
+    @RequestMapping(value = "/archive/delete",
+            produces = { "application/xml", "application/json" },
+            method = RequestMethod.DELETE)
+    public ResponseEntity<Void> deleteByParams(@ApiParam(value = "" ,required=true) @RequestHeader(value="api_key", required=true) String apiKey,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcXml", required = true) String srcXml,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcVersion", required = true) String srcVersion,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "targetIri", required = true) String targetIri) {
+        if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
+            Archived dbArchived = archivedDao.getBySrcxmlSrcversionTargetiri(srcXml, srcVersion, targetIri);
+            if (archivedDao != null) {
+                archivedDao.delete(dbArchived);
+                return new ResponseEntity<>(HttpStatus.OK);
+            }
+        } else {
+            log.warn("ObjectMapper or HttpServletRequest not configured in default ArchiveApi interface so no example is generated");
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+
+    private int checkCredentials(IngestData ingestData) throws URISyntaxException {
         //check TDR credentials
-        CloseableHttpClient httpClient = BridgeHelper.createHttpClient((new IRI(ingestData.getTdrData().getIri())).toURI()
+        try(CloseableHttpClient httpClient = BridgeHelper.createHttpClient((new IRI(ingestData.getTdrData().getIri())).toURI()
                                                                             , ingestData.getTdrData().getUsername()
-                                                                            , ingestData.getTdrData().getPassword());
-        HttpGet httpGet = new HttpGet("http://deasy.dans.knaw.nl/sword2/servicedocument");
-        CloseableHttpResponse response = httpClient.execute(httpGet);
-        return (response.getStatusLine().getStatusCode() == org.apache.http.HttpStatus.SC_FORBIDDEN);
+                                                                            , ingestData.getTdrData().getPassword())){
+            HttpGet httpGet = new HttpGet("http://deasy.dans.knaw.nl/sword2/servicedocument");
+            CloseableHttpResponse response = httpClient.execute(httpGet);
+            return response.getStatusLine().getStatusCode();
+        } catch (IOException e) {
+            return org.apache.http.HttpStatus.SC_REQUEST_TIMEOUT;
+        }
     }
 
     private Archived ingestToEASY(String bridgeServerBaseUrl, IngestData ingestData) throws NotFoundException, IOException {
@@ -230,12 +287,11 @@ public class ArchiveApiController implements ArchiveApi {
         final ArchivedObjectHolder archivedObjectHolderState = new ArchivedObjectHolder();
         Flowable.fromCallable(() -> {
             composeBagit(dv2TdrTransformer, dvBridgeDataset, bagTempDir);
-
             File tempCopy = BridgeHelper.copyToTarget(bagTempDir.toFile());
-            IDataverseIngest di = new IngestToEasy();
-            final ArchivedObject easyResponse = di.execute(tempCopy, new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
             archived.setState(StateEnum.IN_PROGRESS.toString());
             archivedDao.create(archived);
+            IDataverseIngest di = new IngestToEasy();
+            final ArchivedObject easyResponse = di.execute(tempCopy, new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
             archivedObjectHolderState.setArchivedObject(easyResponse);
             LOG.info("status: " + easyResponse.getStatus());
             return archived;
@@ -382,7 +438,7 @@ public class ArchiveApiController implements ArchiveApi {
                     url = url.replace("https://ddvn.dans.knaw.nl","http://ddvn.dans.knaw.nl");
                     if (FilePermissionChecker.check(url) == FilePermissionStatus.RESTRICTED) {
                         dvFile.setAccessRights("RESTRICTED_REQUEST");
-                        //FileUtils.copyURLToFile(new URL(url + "?key=" + dvnTdrUser.getDvnUserApitoken()), dvnFileForIngest);
+                        FileUtils.copyURLToFile(new URL(url + "?key=" + ingestData.getSrcData().getApiToken()), dvnFileForIngest);
                     } else {
                         FileUtils.copyURLToFile(new URL(url), dvnFileForIngest);
                     }

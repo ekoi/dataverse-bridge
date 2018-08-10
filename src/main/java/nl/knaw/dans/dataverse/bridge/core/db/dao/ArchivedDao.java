@@ -68,7 +68,20 @@ public class ArchivedDao {
         return;
     }
 
-
+    /**
+     * Return the Archived having the passed name.
+     */
+    public Archived getById(long id) {
+        Query q = entityManager.createQuery(
+                "from Archived where id = :id")
+                .setParameter("id", id);
+        try {
+            return (Archived) q.getSingleResult();
+        } catch (NoResultException nre) {
+            //Ignore this because as per our logic this is ok!
+        }
+        return null;
+    }
     /**
      * Return the Archived having the passed name.
      */

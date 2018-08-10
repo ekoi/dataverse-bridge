@@ -97,6 +97,70 @@ paths:
           description: Dataset couldn't have been created.
         '405':
           description: "Invalid input"
+
+  /archive/delete/{id}:
+    delete:
+      tags:
+        - "archiving"
+      summary: "Deletes a record"
+      description: ""
+      operationId: "deleteById"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - name: "api_key"
+          in: "header"
+          required: true
+          type: "string"
+        - name: "id"
+          in: "path"
+          description: "Record id to delete"
+          required: true
+          type: "integer"
+          format: "int64"
+      responses:
+        200:
+          description: "Record is deleted"
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Record not found"
+  /archive/delete:
+    delete:
+      tags:
+        - "archiving"
+      summary: "Deletes a record"
+      description: ""
+      operationId: "deleteByParams"
+      produces:
+        - "application/xml"
+        - "application/json"
+      parameters:
+        - name: "api_key"
+          in: "header"
+          required: true
+          type: "string"
+        - in: "query"
+          name: "srcXml"
+          required: true
+          type: string
+        - in: "query"
+          name: "srcVersion"
+          required: true
+          type: string
+        - in: "query"
+          name: "targetIri"
+          required: true
+          type: string
+      responses:
+        200:
+          description: "Record is deleted"
+        400:
+          description: "Invalid Paramas supplied"
+        404:
+          description: "Record not found"
+
 definitions:
 
   Archived:

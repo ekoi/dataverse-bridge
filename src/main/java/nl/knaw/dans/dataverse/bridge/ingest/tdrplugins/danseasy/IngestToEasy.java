@@ -78,6 +78,7 @@ public class IngestToEasy implements IDataverseIngest {
             LOG.error("ERROR: " + e.getMessage());
             sb.append("\nERROR: " + e.getMessage() + "\n");
             state = StateEnum.ERROR.toString();
+            //send mail
         }
         archivedObject.setLandingPage(getLandingPage());
         archivedObject.setPid(getPid());
