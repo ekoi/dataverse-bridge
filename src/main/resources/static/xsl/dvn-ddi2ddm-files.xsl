@@ -30,6 +30,8 @@
             <xsl:attribute name="filepath" select="concat('data/',$filename, '.xml')"/>
             <dcterms:title><xsl:value-of select="$filename"/></dcterms:title>
             <dcterms:format>application/xml</dcterms:format>
+            <dcterms:accessibleToRights>ANONYMOUS</dcterms:accessibleToRights>
+            <dcterms:visibleToRights>ANONYMOUS</dcterms:visibleToRights>
         </xsl:element>
     </xsl:template>
     <xsl:template name="jsonFile">
@@ -40,6 +42,8 @@
             <xsl:attribute name="filepath" select="concat('data/',$filename, '.json')"/>
             <dcterms:title><xsl:value-of select="$filename"/></dcterms:title>
             <dcterms:format>application/xml</dcterms:format>
+            <dcterms:accessibleToRights>ANONYMOUS</dcterms:accessibleToRights>
+            <dcterms:visibleToRights>ANONYMOUS</dcterms:visibleToRights>
         </xsl:element>
     </xsl:template>
     <xsl:template name="files">
@@ -48,7 +52,15 @@
                 <xsl:attribute name="filepath" select="concat('data/',.)"/>
                 <dcterms:format xsi:type="dcterms:IMT"><xsl:value-of select="../ddi:notes[@level='file' and @subject='Content/MIME Type']"/></dcterms:format>
                 <dcterms:title><xsl:value-of select="."/></dcterms:title>
-
+                <xsl:choose>
+                    <xsl:when test="../ddi:restricted = 'true'">
+                        <dcterms:accessibleToRights>RESTRICTED_REQUEST</dcterms:accessibleToRights>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <dcterms:accessibleToRights>ANONYMOUS</dcterms:accessibleToRights>
+                    </xsl:otherwise>
+                </xsl:choose>
+                <dcterms:visibleToRights>ANONYMOUS</dcterms:visibleToRights>
                 <!-- description is not used by EASY
                 <xsl:for-each select="../ddi:txt">
                     <dcterms:description><xsl:value-of select="."/></dcterms:description>

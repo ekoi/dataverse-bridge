@@ -1,4 +1,4 @@
-package nl.knaw.dans.dataverse.bridge.source.dataverse;
+package nl.knaw.dans.dataverse.bridge.core.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,16 +10,17 @@ import java.net.URL;
 
 public class FilePermissionChecker {
     private static final Logger LOG = LoggerFactory.getLogger(FilePermissionChecker.class);
-    public static FilePermissionStatus check(String url) {
+
+    public static PermissionStatus check(String url) {
         URL validUrl;
         try {
             validUrl = new URL(url);
             HttpURLConnection huc = (HttpURLConnection) validUrl.openConnection();
             int rc = huc.getResponseCode();
             if (rc == HttpURLConnection.HTTP_OK)
-                return FilePermissionStatus.OK;
+                return PermissionStatus.OK;
             else if (rc == HttpURLConnection.HTTP_FORBIDDEN)
-                return FilePermissionStatus.RESTRICTED;
+                return PermissionStatus.RESTRICTED;
             else
                 LOG.error(url + " response gives status other 200 (HTTP_OK). Response code: " + rc);
         } catch (MalformedURLException e) {
@@ -27,6 +28,24 @@ public class FilePermissionChecker {
         } catch (IOException e) {
             LOG.error("IOException, message: " + e.getMessage());
         }
-        return FilePermissionStatus.OTHER;
+        return PermissionStatus.OTHER;
     }
+
+    public enum PermissionStatus {
+        OTHER,
+        OK,
+        RESTRICTED;
+
+        public String toString() {
+            switch (this) {
+                case OK:
+                    return "OK";
+                case RESTRICTED:
+                    return "RESTRICTED";
+            }
+            return "OTHER";//default
+        }
+
+    }
+
 }

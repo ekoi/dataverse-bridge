@@ -1,11 +1,10 @@
 package nl.knaw.dans.dataverse.bridge.generated.api;
 
-import java.io.IOException;
-
 import javax.servlet.*;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-07-26T08:34:54.208+02:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-10T22:28:04.437+02:00")
 
 public class ApiOriginFilter implements javax.servlet.Filter {
     @Override

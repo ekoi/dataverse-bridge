@@ -1,9 +1,9 @@
 package nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy;
 
+import nl.knaw.dans.dataverse.bridge.core.util.BridgeHelper;
 import nl.knaw.dans.dataverse.bridge.core.util.StateEnum;
 import nl.knaw.dans.dataverse.bridge.ingest.ArchivedObject;
 import nl.knaw.dans.dataverse.bridge.ingest.IDataverseIngest;
-import nl.knaw.dans.dataverse.bridge.core.util.BridgeHelper;
 import org.apache.abdera.i18n.iri.IRI;
 import org.apache.abdera.model.Category;
 import org.apache.abdera.model.Entry;
