@@ -4,13 +4,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.loc.repository.bagit.Bag;
-import gov.loc.repository.bagit.BagFactory;
-import gov.loc.repository.bagit.Manifest;
-import gov.loc.repository.bagit.PreBag;
-import gov.loc.repository.bagit.transformer.impl.ChainingCompleter;
-import gov.loc.repository.bagit.transformer.impl.DefaultCompleter;
-import gov.loc.repository.bagit.transformer.impl.TagManifestCompleter;
 import io.reactivex.Flowable;
 import io.reactivex.functions.Action;
 import io.reactivex.schedulers.Schedulers;
@@ -18,11 +11,11 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import nl.knaw.dans.dataverse.bridge.core.bagit.BagInfoCompleter;
 import nl.knaw.dans.dataverse.bridge.core.db.dao.ArchivedDao;
 import nl.knaw.dans.dataverse.bridge.core.db.domain.Archived;
 import nl.knaw.dans.dataverse.bridge.core.util.BridgeHelper;
 import nl.knaw.dans.dataverse.bridge.core.util.StateEnum;
+import nl.knaw.dans.dataverse.bridge.exception.BridgeException;
 import nl.knaw.dans.dataverse.bridge.generated.api.ArchiveApi;
 import nl.knaw.dans.dataverse.bridge.generated.model.Error;
 import nl.knaw.dans.dataverse.bridge.generated.model.IngestData;
@@ -50,8 +43,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.stream.StreamSource;
 import java.io.File;
 import java.io.IOException;
@@ -180,7 +171,7 @@ public class ArchiveApiController implements ArchiveApi {
                         return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(dbArchived), nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.OK);
                     }
 
-                    int statusCode = checkCredentials(ingestData);
+                    int statusCode = checkCredentials(ingestData, env.getProperty("bridge.tdr.timeout", Integer.class));
                     switch (statusCode) {
                         case org.apache.http.HttpStatus.SC_REQUEST_TIMEOUT:
                             return new ResponseEntity<>(HttpStatus.REQUEST_TIMEOUT);
@@ -227,7 +218,7 @@ public class ArchiveApiController implements ArchiveApi {
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
             Archived dbArchived = archivedDao.getById(id);
-            if (archivedDao != null) {
+            if (dbArchived != null) {
                 archivedDao.delete(dbArchived);
                 return new ResponseEntity<>(HttpStatus.OK);
             }
@@ -249,7 +240,7 @@ public class ArchiveApiController implements ArchiveApi {
     public ResponseEntity<Void> deleteByParams(@ApiParam(value = "" ,required=true) @RequestHeader(value="api_key", required=true) String apiKey,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcXml", required = true) String srcXml,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcVersion", required = true) String srcVersion,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "targetIri", required = true) String targetIri) {
         if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
             Archived dbArchived = archivedDao.getBySrcxmlSrcversionTargetiri(srcXml, srcVersion, targetIri);
-            if (archivedDao != null) {
+            if (dbArchived != null) {
                 archivedDao.delete(dbArchived);
                 return new ResponseEntity<>(HttpStatus.OK);
             }
@@ -286,11 +277,12 @@ public class ArchiveApiController implements ArchiveApi {
     }
 
 
-    private int checkCredentials(IngestData ingestData) throws URISyntaxException {
+    private int checkCredentials(IngestData ingestData, int timeout) throws URISyntaxException {
         //check TDR credentials
+        //see https://stackoverflow.com/questions/21574478/what-is-the-difference-between-closeablehttpclient-and-httpclient-in-apache-http
         try(CloseableHttpClient httpClient = BridgeHelper.createHttpClient((new IRI(ingestData.getTdrData().getIri())).toURI()
                                                                             , ingestData.getTdrData().getUsername()
-                                                                            , ingestData.getTdrData().getPassword())){
+                                                                            , ingestData.getTdrData().getPassword(), timeout)){
             HttpGet httpGet = new HttpGet(ingestData.getTdrData().getIri());
             CloseableHttpResponse response = httpClient.execute(httpGet);
             return response.getStatusLine().getStatusCode();
@@ -312,18 +304,30 @@ public class ArchiveApiController implements ArchiveApi {
             Path bagTempDir = ebc.getBagTempDir();
             archived.setBagitDir(bagTempDir.toString());
             archivedDao.update(archived);
-            ebc.buildEasyXml(dv2EasyTransformer.getDatasetXml(), dv2EasyTransformer.getFilesXml());
+
+            ebc.buildEasyBag(dv2EasyTransformer.getDatasetXml(), dv2EasyTransformer.getFilesXml());
             ebc.createDdiAndJsonXml(ingestData.getSrcData().getSrcXml());
             ebc.downloadFiles(dv2EasyTransformer.getRestrictedFiles(), ingestData.getSrcData().getApiToken(), dv2EasyTransformer.getPublicFiles());
-            composeBagit(bagTempDir);
+            ebc.composeBagit();
+            File bagitZipFile = ebc.createBagitZip();
+
             IDataverseIngest di = new IngestToEasy();
-            final ArchivedObject easyResponse = di.execute(bagTempDir.toFile(), new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
+            final ArchivedObject easyResponse = di.execute(bagitZipFile, new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
             archivedObjectHolderState.setArchivedObject(easyResponse);
             LOG.info("status: " + easyResponse.getStatus());
             return archived;
         })
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.single())
+                .doOnError(ex -> {
+                    LOG.info(ex.getClass().getName());
+                    if (ex instanceof BridgeException) {
+                        LOG.info(((BridgeException) ex).getClassName() + "\t" + ex.getMessage());
+                    }
+
+                    archived.setAuditLog(ex.getMessage());
+                    archivedDao.update(archived);
+                })
                 .doOnComplete(new Action() {
                     @Override
                     public void run()  {
@@ -359,7 +363,11 @@ public class ArchiveApiController implements ArchiveApi {
 //                        }
                     }
                 })
-                .subscribe();
+                .subscribe(arch -> {
+                    LOG.info(arch.getState());
+                }, throwable -> {
+                    LOG.info(throwable.getMessage());
+                });
 
         return archived;
     }
@@ -397,17 +405,4 @@ public class ArchiveApiController implements ArchiveApi {
         return archived;
     }
 
-
-    private void composeBagit(Path bagitDir) throws TransformerException, ParserConfigurationException, IOException {
-        BagFactory bf = new BagFactory();
-        BagInfoCompleter bic = new BagInfoCompleter(bf);
-        DefaultCompleter dc = new DefaultCompleter(bf);
-        dc.setPayloadManifestAlgorithm(Manifest.Algorithm.SHA1);
-        TagManifestCompleter tmc = new TagManifestCompleter(bf);
-        tmc.setTagManifestAlgorithm(Manifest.Algorithm.SHA1);
-        ChainingCompleter completer = new ChainingCompleter(dc, new BagInfoCompleter(bf), tmc);
-        PreBag pb = bf.createPreBag(bagitDir.toFile());
-        pb.makeBagInPlace(BagFactory.Version.V0_97, false, completer);
-        Bag b = bf.createBag(bagitDir.toFile());
-    }
 }

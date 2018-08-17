@@ -31,30 +31,27 @@ public class IngestToEasy implements IDataverseIngest {
     private String landingPage;
     private String doi;
     private static final Logger LOG = LoggerFactory.getLogger(IngestToEasy.class);
+    private int timeout = 60000;
+    int chunkSize = 262144000;
+
 
     @Override
-    public ArchivedObject execute(File bagDir, IRI colIri, String uid, String pw) {
+    public ArchivedObject execute(File bagitZipFile, IRI colIri, String uid, String pw) {
+        long checkingTimePeriod = 5000;
         ArchivedObject archivedObject = new ArchivedObject();
         StringBuffer sb = new StringBuffer("");
         String state = "";
-        // 0. Zip the bagDir
-        File zipFile = new File(bagDir.getAbsolutePath() + ".zip");
-        zipFile.delete();
-        int chunkSize = 262144000;
-        long zipFileLength = zipFile.length();
-        long checkingTimePeriod = 5000;
 
         try {
-            BridgeHelper.zipDirectory(bagDir, zipFile);
             // 1. Set up stream for calculating MD5
-            FileInputStream fis = new FileInputStream(zipFile);
+            FileInputStream fis = new FileInputStream(bagitZipFile);
             MessageDigest md = MessageDigest.getInstance("MD5");
             DigestInputStream dis = new DigestInputStream(fis, md);
 
             // 2. Post first chunk bag to Col-IRI
-            CloseableHttpClient http = BridgeHelper.createHttpClient(colIri.toURI(), uid, pw);
-            CloseableHttpResponse response = BridgeHelper.sendChunk(dis, chunkSize, "POST", colIri.toURI(), "bag.zip.1", "application/octet-stream", http,
-                    chunkSize < zipFile.length());
+            CloseableHttpClient http = BridgeHelper.createHttpClient(colIri.toURI(), uid, pw, getTimeout());
+            CloseableHttpResponse response = BridgeHelper.sendChunk(dis, getChunkSize(), "POST", colIri.toURI(), "bag.zip.1", "application/octet-stream", http,
+                    getChunkSize() < bagitZipFile.length());
 
             // 3. Check the response. If transfer corrupt (MD5 doesn't check out), report and exit.
             String bodyText = BridgeHelper.readEntityAsString(response.getEntity());
@@ -71,7 +68,7 @@ public class IngestToEasy implements IDataverseIngest {
             Link seIriLink = receipt.getLink("edit");
             URI seIri = seIriLink.getHref().toURI();
 
-            int remaining = (int) zipFile.length() - chunkSize;
+            int remaining = (int) bagitZipFile.length() - chunkSize;
             int count = 2;
             while (remaining > 0) {
                 checkingTimePeriod += 1000;
@@ -83,7 +80,6 @@ public class IngestToEasy implements IDataverseIngest {
                     LOG.error("FAILED. Status = " + response.getStatusLine());
                     LOG.error("Response body follows:");
                     LOG.error(bodyText);
-                    //System.exit(2);
                 }
                 LOG.info("SUCCESS.");
             }
@@ -122,7 +118,7 @@ public class IngestToEasy implements IDataverseIngest {
         CloseableHttpResponse response;
         String bodyText;
         LOG.info("Checking Time Period: " + checkingTimePeriod + " milliseconds.");
-        LOG.info("Start polling Stat-IRI for the current status of the deposit, waiting 10 seconds before every request ...");
+        LOG.info("Start polling Stat-IRI for the current status of the deposit, waiting {} seconds before every request ...", checkingTimePeriod);
         while (true) {
             Thread.sleep(checkingTimePeriod);
             LOG.info("Checking deposit status ... ");
@@ -181,9 +177,7 @@ public class IngestToEasy implements IDataverseIngest {
                         LOG.info("DvBridgeDataset landing page will be located at: " + stateText);
                         LOG.info("Complete statement follows:");
                         LOG.info(bodyText);
-
                         setLandingPage(stateText);
-                        //return "<easyLandingPage>" + stateText + "</easyLandingPage>";
                         return state;
                     }
                 }
@@ -222,5 +216,19 @@ public class IngestToEasy implements IDataverseIngest {
         return dois;
     }
 
+    private int getTimeout() {
+        return timeout;
+    }
 
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    public int getChunkSize() {
+        return chunkSize;
+    }
+
+    public void setChunkSize(int chunkSize) {
+        this.chunkSize = chunkSize;
+    }
 }

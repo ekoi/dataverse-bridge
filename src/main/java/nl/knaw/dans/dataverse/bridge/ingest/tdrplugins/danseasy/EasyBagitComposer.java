@@ -1,5 +1,15 @@
 package nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy;
 
+import gov.loc.repository.bagit.Bag;
+import gov.loc.repository.bagit.BagFactory;
+import gov.loc.repository.bagit.Manifest;
+import gov.loc.repository.bagit.PreBag;
+import gov.loc.repository.bagit.transformer.impl.ChainingCompleter;
+import gov.loc.repository.bagit.transformer.impl.DefaultCompleter;
+import gov.loc.repository.bagit.transformer.impl.TagManifestCompleter;
+import nl.knaw.dans.dataverse.bridge.core.bagit.BagInfoCompleter;
+import nl.knaw.dans.dataverse.bridge.core.util.BridgeHelper;
+import nl.knaw.dans.dataverse.bridge.exception.BridgeException;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,36 +28,35 @@ public class EasyBagitComposer {
     private Path metadataDir;
     private Path bagTempDir;
 
-    public EasyBagitComposer(String bagitBaseDir) {
+    public EasyBagitComposer(String bagitBaseDir) throws BridgeException {
         bagTempDir = createTempDirectory(bagitBaseDir);
     }
 
-    public boolean buildEasyXml(String datasetXml, String filesXml) {
+    public void buildEasyBag(String datasetXml, String filesXml) throws IOException {
         LOG.info("bagitDir: " + bagitDir);
         LOG.info("bagitDir absoluth path " + bagitDir.toAbsolutePath());
         metadataDir = Paths.get(bagitDir + "/metadata");
-        try {
-            Files.createDirectories(metadataDir);
-            createDatasetXmlFile(datasetXml);
-            createFilesXmlFile(filesXml);
-            return true;
-        } catch (IOException e) {
-            LOG.error("ERROR: buildEasyBagit - IOException, caused by: " + e.getMessage());
-        }
-        return false;
+        Files.createDirectories(metadataDir);
+        createDatasetXmlFile(datasetXml);
+        createFilesXmlFile(filesXml);
     }
 
-    public boolean createDdiAndJsonXml(String ddiEportUrl){
-        try {
+    public void createDdiAndJsonXml(String ddiEportUrl) throws IOException {
             FileUtils.copyURLToFile(new URL(ddiEportUrl), new File(bagTempDir + "/data/" +getExportedDvFilename(ddiEportUrl,"xml")));
             //json: http://ddvn.dans.knaw.nl:8080/api/datasets/:persistentId/?persistentId=hdl:12345/JLO8HN
             FileUtils.copyURLToFile(new URL(ddiEportUrl.replace("export?exporter=ddi&", ":persistentId/?"))
                     ,  new File(bagTempDir + "/data/" +getExportedDvFilename(ddiEportUrl, "json")));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
     }
+    /*
+    How can I throw CHECKED exceptions from inside Java 8 streams?
+    Oracle messed it up.
+    They cling on the concept of checked exceptions, but inconsistently forgot to take care of checked exceptions when designing the functional interfaces, streams, lambda etc.
+    see: https://stackoverflow.com/questions/27644361/how-can-i-throw-checked-exceptions-from-inside-java-8-streams
+
+     This method will throw runtime exception.
+     */
+
+    /*
     public boolean downloadFiles(Map<String, String> restrictedFiles, String apiToken, Map<String, String> publicFiles) throws IOException {
         try {
             publicFiles.forEach((k, v) -> {
@@ -71,16 +80,57 @@ public class EasyBagitComposer {
             });
 
         }
-        catch (WrappedException w) {
+        catch (BridgeException w) {
             throw (IOException) w.cause;
         }
 
         return false;
+    }*/
+
+
+
+    public void downloadFiles(Map<String, String> restrictedFiles, String apiToken, Map<String, String> publicFiles) throws BridgeException {
+
+        for (Map.Entry<String, String> publicFile : publicFiles.entrySet()){
+            try {
+                FileUtils.copyURLToFile(new URL(publicFile.getValue()),  new File(bagTempDir + "/data/" + publicFile.getKey()));
+            } catch (IOException e) {
+                throw new BridgeException("[EasyBagitComposer - downloadFiles] Public File. URL: " + publicFile.getValue()
+                        + " File name: " + publicFile.getKey() + "; errror msg: " + e.getMessage(), e, "IOException");
+            }
+        }
+        for (Map.Entry<String, String> restrictedFile : restrictedFiles.entrySet()){
+            try {
+                FileUtils.copyURLToFile(new URL(restrictedFile.getValue() + "?key=" + apiToken), new File(bagTempDir + "/data/" + restrictedFile.getKey()));
+            } catch (IOException e) {
+                throw new BridgeException("[EasyBagitComposer - downloadFiles] - Restricted File. URL: " + restrictedFile.getValue()
+                        + " File name: " + restrictedFile.getKey() + "; errror msg: " + e.getMessage(), e, "IOException");
+            }
+        }
     }
 
-    static WrappedException throwWrapped(Throwable t) {
-        throw new WrappedException(t);
+    public void composeBagit() {
+        BagFactory bf = new BagFactory();
+        BagInfoCompleter bic = new BagInfoCompleter(bf);
+        DefaultCompleter dc = new DefaultCompleter(bf);
+        dc.setPayloadManifestAlgorithm(Manifest.Algorithm.SHA1);
+        TagManifestCompleter tmc = new TagManifestCompleter(bf);
+        tmc.setTagManifestAlgorithm(Manifest.Algorithm.SHA1);
+        ChainingCompleter completer = new ChainingCompleter(dc, new BagInfoCompleter(bf), tmc);
+        PreBag pb = bf.createPreBag(bagTempDir.toFile());
+        pb.makeBagInPlace(BagFactory.Version.V0_97, false, completer);
+        Bag b = bf.createBag(bagTempDir.toFile());
     }
+
+    public File createBagitZip() throws Exception {
+        File zipFile = new File(bagTempDir.toFile().getAbsolutePath() + ".zip");
+        BridgeHelper.zipDirectory(bagTempDir.toFile(), zipFile);
+        return zipFile;
+    }
+
+//    static BridgeException throwBridge(Throwable t) {
+//        throw new BridgeException(t);
+//    }
 
     private String getExportedDvFilename(String ddiEportUrl, String ext) {
         return (ddiEportUrl.split("persistentId=")[1])
@@ -98,26 +148,13 @@ public class EasyBagitComposer {
         Files.write(filesXmlFile.toPath(), filesXml.getBytes());
     }
 
-    private Path createTempDirectory(String baseDir) {
+    private Path createTempDirectory(String baseDir) throws BridgeException {
         try {
             bagitDir = Files.createTempDirectory(Paths.get(baseDir), "bagit");
             return bagitDir;
         } catch (IOException e) {
             LOG.error("ERROR: transformToFilesXmlAndCopyFiles - createTempDirectory - IOException, caused by: " + e.getMessage());
-        }
-        return null;//TODO
-    }
-    //File dvnFileForIngest = new File(bagTempDir + "/data/" + title);
-    private void downloadFile(String url, File dvnFileForIngest, String apiToken /*boolean restrictedFile*/) throws IOException {
-        //if (restrictedFile) {
-        if (apiToken != null) {
-            LOG.info("Start Download file: " + url + " to file: " + dvnFileForIngest);
-            FileUtils.copyURLToFile(new URL(url + "?key=" + apiToken), dvnFileForIngest);
-            LOG.info("Download file: " + dvnFileForIngest + " is finish");
-        } else {
-            LOG.info("Start Download file: " + url + " to file: " + dvnFileForIngest);
-            FileUtils.copyURLToFile(new URL(url), dvnFileForIngest);
-            LOG.info("Download file: " + dvnFileForIngest + " is finish");
+            throw new BridgeException(e.getMessage(), e, "IOException");
         }
     }
 
