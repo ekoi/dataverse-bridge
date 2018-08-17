@@ -24,7 +24,6 @@ import nl.knaw.dans.dataverse.bridge.core.db.domain.Archived;
 import nl.knaw.dans.dataverse.bridge.core.util.BridgeHelper;
 import nl.knaw.dans.dataverse.bridge.core.util.StateEnum;
 import nl.knaw.dans.dataverse.bridge.generated.api.ArchiveApi;
-import nl.knaw.dans.dataverse.bridge.generated.api.NotFoundException;
 import nl.knaw.dans.dataverse.bridge.generated.model.Error;
 import nl.knaw.dans.dataverse.bridge.generated.model.IngestData;
 import nl.knaw.dans.dataverse.bridge.ingest.ArchivedObject;
@@ -42,6 +41,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -66,6 +66,8 @@ public class ArchiveApiController implements ArchiveApi {
 
     @Autowired
     Environment env;
+    @Autowired
+    private JavaMailSender mailSender;
 
     @Value("${server.address}")
     private String serverAddress;
@@ -186,12 +188,10 @@ public class ArchiveApiController implements ArchiveApi {
                             if (ingestData.getSrcData().getAppName().equals("DATAVERSE") && ingestData.getTdrData().getAppName().equals("EASY")) {
                                 String bridgeServerBaseUrl = "http://" + serverAddress + ":" + serverPort + contextPath + "/";
                                 dbArchived = ingestToEASY(bridgeServerBaseUrl, ingestData);
+                                if (dbArchived != null)
+                                    return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(dbArchived), Archived.class), HttpStatus.CREATED);
                             }
-                            return new ResponseEntity<>(getObjectMapper().get().readValue(objectMapper.writeValueAsString(dbArchived), nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.CREATED);
                     }
-                    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-                } catch (NotFoundException e) {
-                    log.error("NotFoundException: " + e.getMessage());
                 } catch (URISyntaxException e) {
                     log.error("URISyntaxException: " + e.getMessage());
                 } catch (JsonParseException e) {
@@ -216,11 +216,14 @@ public class ArchiveApiController implements ArchiveApi {
             @ApiResponse(code = 200, message = "Record is deleted"),
             @ApiResponse(code = 400, message = "Invalid ID supplied"),
             @ApiResponse(code = 404, message = "Record not found") })
-    @RequestMapping(value = "/archive/delete/{id}",
+    @RequestMapping(value = "/archive/{id}",
             produces = { "application/xml", "application/json" },
             method = RequestMethod.DELETE)
     public ResponseEntity<Void> deleteById(@ApiParam(value = "" ,required=true) @RequestHeader(value="api_key", required=true) String apiKey,@ApiParam(value = "Record id to delete",required=true) @PathVariable("id") Long id) {
         if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
+            if(!apiKey.equals( env.getProperty("bridge.apikey")))
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
             Archived dbArchived = archivedDao.getById(id);
             if (archivedDao != null) {
                 archivedDao.delete(dbArchived);
@@ -238,7 +241,7 @@ public class ArchiveApiController implements ArchiveApi {
             @ApiResponse(code = 200, message = "Record is deleted"),
             @ApiResponse(code = 400, message = "Invalid Paramas supplied"),
             @ApiResponse(code = 404, message = "Record not found") })
-    @RequestMapping(value = "/archive/delete",
+    @RequestMapping(value = "/archive",
             produces = { "application/xml", "application/json" },
             method = RequestMethod.DELETE)
     public ResponseEntity<Void> deleteByParams(@ApiParam(value = "" ,required=true) @RequestHeader(value="api_key", required=true) String apiKey,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcXml", required = true) String srcXml,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcVersion", required = true) String srcVersion,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "targetIri", required = true) String targetIri) {
@@ -254,13 +257,39 @@ public class ArchiveApiController implements ArchiveApi {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
+    @Override
+    @ApiOperation(value = "Updated Archive", nickname = "updateArchive", notes = "Update the existing Archive.", tags={ "archiving", })
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Record is updated"),
+            @ApiResponse(code = 400, message = "Invalid id supplied"),
+            @ApiResponse(code = 404, message = "Archived not found") })
+    @RequestMapping(value = "/archive",
+            produces = { "application/json", "application/xml" },
+            method = RequestMethod.PUT)
+    public ResponseEntity<Void> updateArchive(@ApiParam(value = "" ,required=true) @RequestHeader(value="api_key", required=true) String apiKey,@ApiParam(value = "Updated archive object" ,required=true )  @Valid @RequestBody nl.knaw.dans.dataverse.bridge.core.db.domain.Archived archive) {
+        if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
+            if(!apiKey.equals( env.getProperty("bridge.apikey")))
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
+            Archived dbArchived = archivedDao.getBySrcxmlSrcversionTargetiri(archive.getSrcXml(), archive.getSrcVersion(), archive.getTargetIri());
+            if (dbArchived == null)
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+            archivedDao.update(archive);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } else {
+            log.warn("ObjectMapper or HttpServletRequest not configured in default ArchiveApi interface so no example is generated");
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+    }
+
 
     private int checkCredentials(IngestData ingestData) throws URISyntaxException {
         //check TDR credentials
         try(CloseableHttpClient httpClient = BridgeHelper.createHttpClient((new IRI(ingestData.getTdrData().getIri())).toURI()
                                                                             , ingestData.getTdrData().getUsername()
                                                                             , ingestData.getTdrData().getPassword())){
-            HttpGet httpGet = new HttpGet("http://deasy.dans.knaw.nl/sword2/servicedocument");
+            HttpGet httpGet = new HttpGet(ingestData.getTdrData().getIri());
             CloseableHttpResponse response = httpClient.execute(httpGet);
             return response.getStatusLine().getStatusCode();
         } catch (IOException e) {
@@ -268,24 +297,23 @@ public class ArchiveApiController implements ArchiveApi {
         }
     }
 
-    private Archived ingestToEASY(String bridgeServerBaseUrl, IngestData ingestData) throws NotFoundException, IOException {
-
-        Dv2EasyTransformer dv2EasyTransformer = new Dv2EasyTransformer(ingestData.getSrcData().getSrcXml()
-                , ingestData.getSrcData().getApiToken()
-                , new StreamSource(bridgeServerBaseUrl + env.getProperty("bridge.xsl.source.easy.dataset"))
-                , new StreamSource(bridgeServerBaseUrl + env.getProperty("bridge.xsl.source.easy.files")));
-        dv2EasyTransformer.createMetadata();
-        Path bagTempDir = dv2EasyTransformer.getBagTempDir();//ingestDataComposer.getBagTempDir();
-
+    private Archived ingestToEASY(String bridgeServerBaseUrl, IngestData ingestData) {
         Archived archived = createNewArchived(ingestData);
         final ArchivedObjectHolder archivedObjectHolderState = new ArchivedObjectHolder();
         Flowable.fromCallable(() -> {
+            Dv2EasyTransformer dv2EasyTransformer = new Dv2EasyTransformer(ingestData.getSrcData().getSrcXml()
+                    , ingestData.getSrcData().getApiToken()
+                    , new StreamSource(bridgeServerBaseUrl + env.getProperty("bridge.xsl.source.easy.dataset"))
+                    , new StreamSource(bridgeServerBaseUrl + env.getProperty("bridge.xsl.source.easy.files")));
+            boolean metadataIsCreated = dv2EasyTransformer.createMetadata();
+            if (!metadataIsCreated) {
+                LOG.error("ERROR: Metadata is not created.");
+                return null;
+            }
+            Path bagTempDir = dv2EasyTransformer.getBagTempDir();
             composeBagit(dv2EasyTransformer);
-            File tempCopy = BridgeHelper.copyToTarget(bagTempDir.toFile());
-            archived.setState(StateEnum.IN_PROGRESS.toString());
-            archivedDao.create(archived);
             IDataverseIngest di = new IngestToEasy();
-            final ArchivedObject easyResponse = di.execute(tempCopy, new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
+            final ArchivedObject easyResponse = di.execute(bagTempDir.toFile(), new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
             archivedObjectHolderState.setArchivedObject(easyResponse);
             LOG.info("status: " + easyResponse.getStatus());
             return archived;
@@ -350,6 +378,8 @@ public class ArchiveApiController implements ArchiveApi {
         archived.setSrcAppName(ingestData.getSrcData().getAppName());
         archived.setTargetIri(ingestData.getTdrData().getIri());
         archived.setTdrAppName(ingestData.getTdrData().getAppName());
+        archived.setState(StateEnum.IN_PROGRESS.toString());
+        archivedDao.create(archived);
         return archived;
     }
 
@@ -361,12 +391,9 @@ public class ArchiveApiController implements ArchiveApi {
         dc.setPayloadManifestAlgorithm(Manifest.Algorithm.SHA1);
         TagManifestCompleter tmc = new TagManifestCompleter(bf);
         tmc.setTagManifestAlgorithm(Manifest.Algorithm.SHA1);
-
         ChainingCompleter completer = new ChainingCompleter(dc, new BagInfoCompleter(bf), tmc);
-
         PreBag pb = bf.createPreBag(dv2EasyTransformer.getBagTempDir().toFile());
         pb.makeBagInPlace(BagFactory.Version.V0_97, false, completer);
         Bag b = bf.createBag(dv2EasyTransformer.getBagTempDir().toFile());
-
     }
 }

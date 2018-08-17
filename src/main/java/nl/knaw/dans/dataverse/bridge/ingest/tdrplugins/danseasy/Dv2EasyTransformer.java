@@ -98,7 +98,7 @@ public class Dv2EasyTransformer {
                         String url = otherMatElement.getAttributes().getNamedItem("URI").getNodeValue();
                         if (url != null) {
                             File dvnFileForIngest = new File(bagTempDir + "/data/" + title);
-                            url = url.replace("https://ddvn.dans.knaw.nl", "http://ddvn.dans.knaw.nl");
+                            url = url.replace("https://ddvn.dans.knaw.nl", "http://ddvn.dans.knaw.nl");//https is hardcoded in SystemConfig - getDataverseSiteUrl()
                             boolean restrictedFile = (FilePermissionChecker.check(url) == FilePermissionChecker.PermissionStatus.RESTRICTED);
                             if (restrictedFile) {
                                 Node restrictedNode = ddiDocument.createElement("restricted");
@@ -112,21 +112,18 @@ public class Dv2EasyTransformer {
                     }
                 }
             }
-        } catch (XPathExpressionException e) {
-           LOG.error("XPathExpressionException, causes by: " + e.getMessage());
-        } catch (MalformedURLException e) {
-            LOG.error("MalformedURLException, causes by: " + e.getMessage());
-        } catch (IOException e) {
-            LOG.error("IOException, causes by: " + e.getMessage());
-        }
-
-        try {
             Transformer transformer = cachedXSLTFiles.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             StringWriter writer = new StringWriter();
             transformer.transform(new DOMSource(doc), new StreamResult(writer));
             filesXml = writer.toString();
             LOG.debug("filesXml: " + filesXml);
+        } catch (XPathExpressionException e) {
+            LOG.error("XPathExpressionException, causes by: " + e.getMessage());
+        } catch (MalformedURLException e) {
+            LOG.error("MalformedURLException, causes by: " + e.getMessage());
+        } catch (IOException e) {
+            LOG.error("IOException, causes by: " + e.getMessage());
         } catch (TransformerConfigurationException e) {
             LOG.error("ERROR: transformToDataset - TransformerConfigurationException, caused by: " + e.getMessage());
         } catch (TransformerException e) {
@@ -146,11 +143,9 @@ public class Dv2EasyTransformer {
         }
     }
 
-    private Path createTempDirectory() {
+    public Path createTempDirectory() {
         try {
-            bagitDir = Files.createTempDirectory("bagit");
-            URI u = bagitDir.toUri();
-            String s = bagitDir.toString();
+            bagitDir = Files.createTempDirectory(Paths.get("/Users/akmi/TEMP-WORKS/dataverse-generated/bagit-temp/bags"), "bagit");
             return bagitDir;
         } catch (IOException e) {
             LOG.error("ERROR: transformToFilesXmlAndCopyFiles - createTempDirectory - IOException, caused by: " + e.getMessage());
@@ -158,9 +153,11 @@ public class Dv2EasyTransformer {
         return null;//TODO
     }
 
-    public void createMetadata() {
+    public boolean createMetadata() {
         ddiDocument = getDocument();
-        //createTempDirectories();
+        if (ddiDocument == null)
+            return false;
+
         transformToDataset(ddiDocument);
         transformToFilesXmlAndCopyFiles(ddiDocument);
         LOG.info("bagitDir: " + bagitDir);
@@ -174,10 +171,11 @@ public class Dv2EasyTransformer {
             //json: http://ddvn.dans.knaw.nl:8080/api/datasets/:persistentId/?persistentId=hdl:12345/JLO8HN
             FileUtils.copyURLToFile(new URL(DDI_EXPORT_URL.replace("export?exporter=ddi&", ":persistentId/?"))
                     ,  new File(bagTempDir + "/data/" +getExportedDvFilename("json")));
+            return true;
         } catch (IOException e) {
             LOG.error("ERROR: createMetadata - IOException, caused by: " + e.getMessage());
         }
-
+        return false;
     }
 
     private String getExportedDvFilename(String ext) {
@@ -197,7 +195,7 @@ public class Dv2EasyTransformer {
         Files.write(filesXmlFile.toPath(), getFilesXml().getBytes());
     }
 
-    private Document getDocument() {
+    public Document getDocument() {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         DocumentBuilder builder;
@@ -205,18 +203,22 @@ public class Dv2EasyTransformer {
         try {
             builder = factory.newDocumentBuilder();
             doc = builder.parse(DDI_EXPORT_URL);
-        } catch (ParserConfigurationException | SAXException | IOException e) {
-            LOG.error("ERROR: getDocument - ParserConfigurationException | SAXException | IOException, caused by: " + e.getMessage());
+        } catch (ParserConfigurationException e) {
+            LOG.error("ERROR: getDocument - ParserConfigurationException, caused by: " + e.getMessage());
+        } catch (SAXException e) {
+            LOG.error("ERROR: getDocument - SAXException, caused by: " + e.getMessage());
+        } catch (IOException e) {
+            LOG.error("ERROR: getDocument - IOException, caused by: " + e.getMessage());
         }
         return doc;
     }
 
-    private String getDatasetXml() {
+    public String getDatasetXml() {
         return datasetXml;
     }
 
-    private String getFilesXml() {
-        System.out.println(filesXml);
+    public String getFilesXml() {
+        LOG.info(filesXml);
         return filesXml;
     }
 

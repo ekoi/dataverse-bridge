@@ -23,12 +23,12 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
+
 /**
  * Created by akmi on 04/05/17.
  */
 public class IngestToEasy implements IDataverseIngest {
     private String landingPage;
-
     private String doi;
     private static final Logger LOG = LoggerFactory.getLogger(IngestToEasy.class);
 
@@ -40,6 +40,10 @@ public class IngestToEasy implements IDataverseIngest {
         // 0. Zip the bagDir
         File zipFile = new File(bagDir.getAbsolutePath() + ".zip");
         zipFile.delete();
+        int chunkSize = 262144000;
+        long zipFileLength = zipFile.length();
+        long checkingTimePeriod = 5000;
+
         try {
             BridgeHelper.zipDirectory(bagDir, zipFile);
             // 1. Set up stream for calculating MD5
@@ -47,9 +51,10 @@ public class IngestToEasy implements IDataverseIngest {
             MessageDigest md = MessageDigest.getInstance("MD5");
             DigestInputStream dis = new DigestInputStream(fis, md);
 
-            // 2. Post entire bag to Col-IRI
+            // 2. Post first chunk bag to Col-IRI
             CloseableHttpClient http = BridgeHelper.createHttpClient(colIri.toURI(), uid, pw);
-            CloseableHttpResponse response = BridgeHelper.sendChunk(dis, (int) zipFile.length(), "POST", colIri.toURI(), "bag.zip", "application/zip", http, false);
+            CloseableHttpResponse response = BridgeHelper.sendChunk(dis, chunkSize, "POST", colIri.toURI(), "bag.zip.1", "application/octet-stream", http,
+                    chunkSize < zipFile.length());
 
             // 3. Check the response. If transfer corrupt (MD5 doesn't check out), report and exit.
             String bodyText = BridgeHelper.readEntityAsString(response.getEntity());
@@ -57,7 +62,32 @@ public class IngestToEasy implements IDataverseIngest {
                 LOG.error("FAILED. Status = " + response.getStatusLine());
                 LOG.error("Response body follows:");
                 LOG.error(bodyText);
+                //System.exit(2);
             }
+            LOG.info("SUCCESS. Deposit receipt follows:");
+            LOG.info(bodyText);
+
+            Entry receipt = BridgeHelper.parse(bodyText);
+            Link seIriLink = receipt.getLink("edit");
+            URI seIri = seIriLink.getHref().toURI();
+
+            int remaining = (int) zipFile.length() - chunkSize;
+            int count = 2;
+            while (remaining > 0) {
+                checkingTimePeriod += 1000;
+                LOG.info(String.format("POST-ing chunk of %d bytes to SE-IRI (remaining: %d) ... ", chunkSize, remaining));
+                response = BridgeHelper.sendChunk(dis, chunkSize, "POST", seIri, "bag.zip." + count++, "application/octet-stream", http, remaining > chunkSize);
+                remaining -= chunkSize;
+                bodyText = BridgeHelper.readEntityAsString(response.getEntity());
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    LOG.error("FAILED. Status = " + response.getStatusLine());
+                    LOG.error("Response body follows:");
+                    LOG.error(bodyText);
+                    //System.exit(2);
+                }
+                LOG.info("SUCCESS.");
+            }
+
             LOG.info("SUCCESS. Deposit receipt follows:");
             sb.append("<bodyText>");
             sb.append(bodyText);
@@ -66,11 +96,11 @@ public class IngestToEasy implements IDataverseIngest {
 
             // 4. Get the statement URL. This is the URL from which to retrieve the current status of the deposit.
             LOG.info("Retrieving Statement IRI (Stat-IRI) from deposit receipt ...");
-            Entry receipt = BridgeHelper.parse(bodyText);
+            receipt = BridgeHelper.parse(bodyText);
             Link statLink = receipt.getLink("http://purl.org/net/sword/terms/statement");
             IRI statIri = statLink.getHref();
             LOG.info("Stat-IRI = " + statIri);
-            state = trackDeposit(http, statIri.toURI());
+            state = trackDeposit(http, statIri.toURI(), checkingTimePeriod);
             // 5. Check statement every ten seconds (a bit too frantic, but okay for this test). If status changes:
             // report new status. If status is an error (INVALID, REJECTED, FAILED) or ARCHIVED: exit.
             LOG.info(state);
@@ -88,12 +118,13 @@ public class IngestToEasy implements IDataverseIngest {
         return archivedObject;
     }
 
-    private String trackDeposit(CloseableHttpClient http, URI statUri) throws Exception {
+    private String trackDeposit(CloseableHttpClient http, URI statUri, long checkingTimePeriod) throws Exception {
         CloseableHttpResponse response;
         String bodyText;
+        LOG.info("Checking Time Period: " + checkingTimePeriod + " milliseconds.");
         LOG.info("Start polling Stat-IRI for the current status of the deposit, waiting 10 seconds before every request ...");
         while (true) {
-            Thread.sleep(1000);
+            Thread.sleep(checkingTimePeriod);
             LOG.info("Checking deposit status ... ");
             response = http.execute(new HttpGet(statUri));
             bodyText = BridgeHelper.readEntityAsString(response.getEntity());
@@ -133,7 +164,7 @@ public class IngestToEasy implements IDataverseIngest {
                                 break;
 
                             default:
-                                System.out.println("WARNING: More than one DOI found (" + numDois + "): ");
+                                LOG.info("WARNING: More than one DOI found (" + numDois + "): ");
                                 for (String doi : dois) {
                                     LOG.info(" [" + doi + "]");
                                 }

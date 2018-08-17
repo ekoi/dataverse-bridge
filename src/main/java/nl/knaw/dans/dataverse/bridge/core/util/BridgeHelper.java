@@ -22,9 +22,14 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.DigestInputStream;
 import java.util.EnumSet;
 import java.util.Optional;
@@ -36,6 +41,7 @@ https://github.com/DANS-KNAW/easy-sword2-dans-examples/blob/master/src/main/java
 public class BridgeHelper {
     static final String BAGIT_URI = "http://purl.org/net/sword/package/BagIt";
     static final BagFactory bagFactory = new BagFactory();
+    private static final Logger LOG = LoggerFactory.getLogger(BridgeHelper.class);
 
     public static void zipDirectory(File dir, File zipFile) throws Exception {
         if (zipFile.exists()) zipFile.delete();
@@ -44,21 +50,17 @@ public class BridgeHelper {
         zf.addFolder(dir, parameters);
     }
 
-    public static File copyToTarget(File dir) throws Exception {
-        File dirInTarget = new File("target", dir.getName());
-        FileUtils.deleteQuietly(dirInTarget);
-        FileUtils.copyDirectory(dir, dirInTarget);
-        return dirInTarget;
-    }
 
     public static CloseableHttpClient createHttpClient(URI uri, String uid, String pw) {
-        RequestConfig config = RequestConfig.custom().setConnectTimeout(3000).setConnectionRequestTimeout(3000).setSocketTimeout(3000).build();
+        RequestConfig config = RequestConfig.custom().setConnectTimeout(30000).setConnectionRequestTimeout(30000).setSocketTimeout(30000).build();
         BasicCredentialsProvider credsProv = new BasicCredentialsProvider();
         credsProv.setCredentials(new AuthScope(uri.getHost(), uri.getPort()), new UsernamePasswordCredentials(uid, pw));
         return HttpClients.custom().setDefaultCredentialsProvider(credsProv).setDefaultRequestConfig(config).build();
     }
 
     public static CloseableHttpResponse sendChunk(DigestInputStream dis, int size, String method, URI uri, String filename, String mimeType, CloseableHttpClient http, boolean inProgress) throws Exception {
+        // System.out.println(String.format("Sending chunk to %s, filename = %s, chunk size = %d, MIME-Type = %s, In-Progress = %s ... ", uri.toString(),
+        // filename, size, mimeType, Boolean.toString(inProgress)));
         byte[] chunk = readChunk(dis, size);
         String md5 = new String(Hex.encodeHex(dis.getMessageDigest().digest()));
         HttpUriRequest request = RequestBuilder.create(method).setUri(uri).setConfig(RequestConfig.custom()
@@ -101,7 +103,4 @@ public class BridgeHelper {
         return EnumSet.allOf(clazz).stream().filter(v -> v.name().equals(name))
                 .findAny();
     }
-
-
-
 }
