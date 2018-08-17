@@ -5,23 +5,31 @@
  */
 package nl.knaw.dans.dataverse.bridge.generated.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.annotations.*;
 import nl.knaw.dans.dataverse.bridge.generated.model.Error;
 import nl.knaw.dans.dataverse.bridge.generated.model.IngestData;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-10T22:28:04.437+02:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-17T12:02:34.262+02:00")
 
 @Api(value = "archive", description = "the archive API")
 public interface ArchiveApi {
@@ -71,7 +79,7 @@ public interface ArchiveApi {
         @ApiResponse(code = 200, message = "Record is deleted"),
         @ApiResponse(code = 400, message = "Invalid ID supplied"),
         @ApiResponse(code = 404, message = "Record not found") })
-    @RequestMapping(value = "/archive/delete/{id}",
+    @RequestMapping(value = "/archive/{id}",
         produces = { "application/xml", "application/json" }, 
         method = RequestMethod.DELETE)
     default ResponseEntity<Void> deleteById(@ApiParam(value = "" ,required=true) @RequestHeader(value="api_key", required=true) String apiKey,@ApiParam(value = "Record id to delete",required=true) @PathVariable("id") Long id) {
@@ -88,7 +96,7 @@ public interface ArchiveApi {
         @ApiResponse(code = 200, message = "Record is deleted"),
         @ApiResponse(code = 400, message = "Invalid Paramas supplied"),
         @ApiResponse(code = 404, message = "Record not found") })
-    @RequestMapping(value = "/archive/delete",
+    @RequestMapping(value = "/archive",
         produces = { "application/xml", "application/json" }, 
         method = RequestMethod.DELETE)
     default ResponseEntity<Void> deleteByParams(@ApiParam(value = "" ,required=true) @RequestHeader(value="api_key", required=true) String apiKey,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcXml", required = true) String srcXml,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcVersion", required = true) String srcVersion,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "targetIri", required = true) String targetIri) {
@@ -141,6 +149,23 @@ public interface ArchiveApi {
                     return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
+        } else {
+            log.warn("ObjectMapper or HttpServletRequest not configured in default ArchiveApi interface so no example is generated");
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+    }
+
+
+    @ApiOperation(value = "Updated Archive", nickname = "updateArchive", notes = "Update the existing Archive.", tags={ "archiving", })
+    @ApiResponses(value = { 
+        @ApiResponse(code = 200, message = "Record is updated"),
+        @ApiResponse(code = 400, message = "Invalid id supplied"),
+        @ApiResponse(code = 404, message = "Archived not found") })
+    @RequestMapping(value = "/archive",
+        produces = { "application/json", "application/xml" }, 
+        method = RequestMethod.PUT)
+    default ResponseEntity<Void> updateArchive(@ApiParam(value = "" ,required=true) @RequestHeader(value="api_key", required=true) String apiKey,@ApiParam(value = "Updated archive object" ,required=true )  @Valid @RequestBody nl.knaw.dans.dataverse.bridge.core.db.domain.Archived archive) {
+        if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
         } else {
             log.warn("ObjectMapper or HttpServletRequest not configured in default ArchiveApi interface so no example is generated");
         }

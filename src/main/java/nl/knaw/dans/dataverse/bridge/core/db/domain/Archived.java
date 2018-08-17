@@ -42,6 +42,11 @@ public class Archived   {
   @NotNull
   private String state;
 
+  private String bagitDir;
+
+  private String auditLog;
+
+
   public Long getId() {
     return id;
   }
@@ -124,6 +129,22 @@ public class Archived   {
 
   public void setState(String state) {
     this.state = state;
+  }
+
+  public String getBagitDir() {
+    return bagitDir;
+  }
+
+  public void setBagitDir(String bagitDir) {
+    this.bagitDir = bagitDir;
+  }
+
+  public String getAuditLog() {
+    return auditLog;
+  }
+
+  public void setAuditLog(String auditLog) {
+    this.auditLog = auditLog;
   }
 }
 

@@ -98,7 +98,7 @@ paths:
         '405':
           description: "Invalid input"
 
-  /archive/delete/{id}:
+  /archive/{id}:
     delete:
       tags:
         - "archiving"
@@ -126,7 +126,7 @@ paths:
           description: "Invalid ID supplied"
         404:
           description: "Record not found"
-  /archive/delete:
+  /archive:
     delete:
       tags:
         - "archiving"
@@ -160,7 +160,33 @@ paths:
           description: "Invalid Paramas supplied"
         404:
           description: "Record not found"
-
+    put:
+      tags:
+      - archiving
+      summary: Updated Archive
+      description: Update the existing Archive.
+      operationId: updateArchive
+      produces:
+      - application/json
+      - application/xml
+      parameters:
+        - name: "api_key"
+          in: "header"
+          required: true
+          type: "string"
+        - in: body
+          name: archive
+          description: Updated archive object
+          required: true
+          schema:
+            $ref: '#/definitions/Archived'
+      responses:
+        200:
+          description: "Record is updated"
+        400:
+          description: Invalid id supplied
+        404:
+          description: Archived not found
 definitions:
 
   Archived:

@@ -29,8 +29,10 @@ import nl.knaw.dans.dataverse.bridge.generated.model.IngestData;
 import nl.knaw.dans.dataverse.bridge.ingest.ArchivedObject;
 import nl.knaw.dans.dataverse.bridge.ingest.IDataverseIngest;
 import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy.Dv2EasyTransformer;
+import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy.EasyBagitComposer;
 import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy.IngestToEasy;
 import org.apache.abdera.i18n.iri.IRI;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -305,13 +307,15 @@ public class ArchiveApiController implements ArchiveApi {
                     , ingestData.getSrcData().getApiToken()
                     , new StreamSource(bridgeServerBaseUrl + env.getProperty("bridge.xsl.source.easy.dataset"))
                     , new StreamSource(bridgeServerBaseUrl + env.getProperty("bridge.xsl.source.easy.files")));
-            boolean metadataIsCreated = dv2EasyTransformer.createMetadata();
-            if (!metadataIsCreated) {
-                LOG.error("ERROR: Metadata is not created.");
-                return null;
-            }
-            Path bagTempDir = dv2EasyTransformer.getBagTempDir();
-            composeBagit(dv2EasyTransformer);
+
+            EasyBagitComposer ebc = new EasyBagitComposer(env.getProperty("bridge.temp.dir.bags"));
+            Path bagTempDir = ebc.getBagTempDir();
+            archived.setBagitDir(bagTempDir.toString());
+            archivedDao.update(archived);
+            ebc.buildEasyXml(dv2EasyTransformer.getDatasetXml(), dv2EasyTransformer.getFilesXml());
+            ebc.createDdiAndJsonXml(ingestData.getSrcData().getSrcXml());
+            ebc.downloadFiles(dv2EasyTransformer.getRestrictedFiles(), ingestData.getSrcData().getApiToken(), dv2EasyTransformer.getPublicFiles());
+            composeBagit(bagTempDir);
             IDataverseIngest di = new IngestToEasy();
             final ArchivedObject easyResponse = di.execute(bagTempDir.toFile(), new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
             archivedObjectHolderState.setArchivedObject(easyResponse);
@@ -330,10 +334,20 @@ public class ArchiveApiController implements ArchiveApi {
                         archived.setEndTime(new Date());
                         archived.setState(ao.getStatus());
                         LOG.info("Ingest finish. Status " + ao.getStatus());
-                        archivedDao.update(archived);
                         if (!ao.getStatus().equals(StateEnum.ARCHIVED)) {
                             //send mail to admin
+                            //delete bagitdir and its zip.
+                            LOG.info(archived.getBagitDir());
+                           File bagDirToDelete = FileUtils.getFile(archived.getBagitDir());
+                           boolean deletedBagDirIsOk = FileUtils.deleteQuietly(bagDirToDelete);
+                           File bagDirZipToDelete = FileUtils.getFile(archived.getBagitDir()+ ".zip");
+                           boolean deletedBagDirZipIsOk = FileUtils.deleteQuietly(bagDirZipToDelete);
+                           if (deletedBagDirIsOk && deletedBagDirZipIsOk) {
+                               LOG.info("Bagit files are deleted.");
+                               archived.setBagitDir("DELETED");
+                           }
                         }
+                        archivedDao.update(archived);
 //                        if (archivedObjectHolderState.getState().equals("SUCCESS")){
 //                            archivedDao.update(archived);
 //                            //check state, it can be failed or archived
@@ -384,7 +398,7 @@ public class ArchiveApiController implements ArchiveApi {
     }
 
 
-    private void composeBagit(Dv2EasyTransformer dv2EasyTransformer) throws TransformerException, ParserConfigurationException, IOException {
+    private void composeBagit(Path bagitDir) throws TransformerException, ParserConfigurationException, IOException {
         BagFactory bf = new BagFactory();
         BagInfoCompleter bic = new BagInfoCompleter(bf);
         DefaultCompleter dc = new DefaultCompleter(bf);
@@ -392,8 +406,8 @@ public class ArchiveApiController implements ArchiveApi {
         TagManifestCompleter tmc = new TagManifestCompleter(bf);
         tmc.setTagManifestAlgorithm(Manifest.Algorithm.SHA1);
         ChainingCompleter completer = new ChainingCompleter(dc, new BagInfoCompleter(bf), tmc);
-        PreBag pb = bf.createPreBag(dv2EasyTransformer.getBagTempDir().toFile());
+        PreBag pb = bf.createPreBag(bagitDir.toFile());
         pb.makeBagInPlace(BagFactory.Version.V0_97, false, completer);
-        Bag b = bf.createBag(dv2EasyTransformer.getBagTempDir().toFile());
+        Bag b = bf.createBag(bagitDir.toFile());
     }
 }
