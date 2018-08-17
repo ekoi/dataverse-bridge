@@ -17,9 +17,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.net.URI;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,9 +46,7 @@ public class IngestToEasy implements IDataverseIngest {
 
         try {
             // 1. Set up stream for calculating MD5
-            FileInputStream fis = new FileInputStream(bagitZipFile);
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            DigestInputStream dis = new DigestInputStream(fis, md);
+            DigestInputStream dis = getDigestInputStream(bagitZipFile);
 
             // 2. Post first chunk bag to Col-IRI
             CloseableHttpClient http = BridgeHelper.createHttpClient(colIri.toURI(), uid, pw, getTimeout());
@@ -112,6 +112,12 @@ public class IngestToEasy implements IDataverseIngest {
         archivedObject.setAuditLogResponse(sb.toString());
         LOG.info("state: " + state);
         return archivedObject;
+    }
+
+    private DigestInputStream getDigestInputStream(File bagitZipFile) throws FileNotFoundException, NoSuchAlgorithmException {
+        FileInputStream fis = new FileInputStream(bagitZipFile);
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        return new DigestInputStream(fis, md);
     }
 
     private String trackDeposit(CloseableHttpClient http, URI statUri, long checkingTimePeriod) throws Exception {

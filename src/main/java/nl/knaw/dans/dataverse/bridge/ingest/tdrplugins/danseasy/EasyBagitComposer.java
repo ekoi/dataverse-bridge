@@ -7,6 +7,7 @@ import gov.loc.repository.bagit.PreBag;
 import gov.loc.repository.bagit.transformer.impl.ChainingCompleter;
 import gov.loc.repository.bagit.transformer.impl.DefaultCompleter;
 import gov.loc.repository.bagit.transformer.impl.TagManifestCompleter;
+import net.lingala.zip4j.exception.ZipException;
 import nl.knaw.dans.dataverse.bridge.core.bagit.BagInfoCompleter;
 import nl.knaw.dans.dataverse.bridge.core.util.BridgeHelper;
 import nl.knaw.dans.dataverse.bridge.exception.BridgeException;
@@ -32,11 +33,15 @@ public class EasyBagitComposer {
         bagTempDir = createTempDirectory(bagitBaseDir);
     }
 
-    public void buildEasyBag(String datasetXml, String filesXml) throws IOException {
+    public void buildEasyBag(String datasetXml, String filesXml) throws BridgeException {
         LOG.info("bagitDir: " + bagitDir);
         LOG.info("bagitDir absoluth path " + bagitDir.toAbsolutePath());
         metadataDir = Paths.get(bagitDir + "/metadata");
-        Files.createDirectories(metadataDir);
+        try {
+            Files.createDirectories(metadataDir);
+        } catch (IOException e) {
+            throw new BridgeException("buildEasyBag - Files.createDirectories, msg: " + e.getMessage(), e, "EasyBagitComposer");
+        }
         createDatasetXmlFile(datasetXml);
         createFilesXmlFile(filesXml);
     }
@@ -122,9 +127,14 @@ public class EasyBagitComposer {
         Bag b = bf.createBag(bagTempDir.toFile());
     }
 
-    public File createBagitZip() throws Exception {
+    public File createBagitZip() throws BridgeException {
         File zipFile = new File(bagTempDir.toFile().getAbsolutePath() + ".zip");
-        BridgeHelper.zipDirectory(bagTempDir.toFile(), zipFile);
+        try {
+            BridgeHelper.zipDirectory(bagTempDir.toFile(), zipFile);
+        } catch (ZipException e) {
+            throw new BridgeException("createBagitZip, msg: " + e.getMessage(), e, "EasyBagitComposer");
+
+        }
         return zipFile;
     }
 
@@ -137,15 +147,23 @@ public class EasyBagitComposer {
                 .replace(":","-")
                 .replace("/","-") + "." + ext;
     }
-    private void createDatasetXmlFile(String datasetXml) throws IOException {
+    private void createDatasetXmlFile(String datasetXml) throws BridgeException {
         File datasetXmlFile = new File(metadataDir + "/dataset.xml");
-        datasetXmlFile.createNewFile();
-        Files.write(datasetXmlFile.toPath(), datasetXml.getBytes());
+        try {
+            datasetXmlFile.createNewFile();
+            Files.write(datasetXmlFile.toPath(), datasetXml.getBytes());;
+        } catch (IOException e) {
+            throw new BridgeException("createDatasetXmlFile, msg: " + e.getMessage(), e, "EasyBagitComposer");
+        }
     }
 
-    private void createFilesXmlFile(String filesXml) throws IOException {
+    private void createFilesXmlFile(String filesXml) throws BridgeException {
         File filesXmlFile = new File(metadataDir + "/files.xml");
-        Files.write(filesXmlFile.toPath(), filesXml.getBytes());
+        try {
+            Files.write(filesXmlFile.toPath(), filesXml.getBytes());
+        } catch (IOException e) {
+            throw new BridgeException("createFilesXmlFile, msg: " + e.getMessage(), e, "EasyBagitComposer");
+        }
     }
 
     private Path createTempDirectory(String baseDir) throws BridgeException {

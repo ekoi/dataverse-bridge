@@ -2,6 +2,7 @@ package nl.knaw.dans.dataverse.bridge.core.util;
 
 import gov.loc.repository.bagit.BagFactory;
 import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
 import net.lingala.zip4j.model.ZipParameters;
 import org.apache.abdera.Abdera;
 import org.apache.abdera.model.Document;
@@ -39,7 +40,7 @@ public class BridgeHelper {
     static final BagFactory bagFactory = new BagFactory();
     private static final Logger LOG = LoggerFactory.getLogger(BridgeHelper.class);
 
-    public static void zipDirectory(File dir, File zipFile) throws Exception {
+    public static void zipDirectory(File dir, File zipFile) throws ZipException {
         if (zipFile.exists()) zipFile.delete();
         ZipFile zf = new ZipFile(zipFile);
         ZipParameters parameters = new ZipParameters();
