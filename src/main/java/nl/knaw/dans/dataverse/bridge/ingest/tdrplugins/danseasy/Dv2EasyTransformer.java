@@ -8,6 +8,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -21,6 +22,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +40,7 @@ public class Dv2EasyTransformer {
     private Templates cachedXSLTFiles;
     private String datasetXml;
     private String filesXml;
-
+    private XPath xPath = XPathFactory.newInstance().newXPath();
     private Map<String, String> restrictedFiles = new HashMap<String, String>();
     private Map<String, String> publicFiles = new HashMap<String, String>();
 
@@ -53,6 +55,8 @@ public class Dv2EasyTransformer {
         Document ddiDocument = getDocument();//buildDocument
         transformToDataset(ddiDocument);
         transformToFilesXml(ddiDocument);
+        if (!restrictedFiles.isEmpty())
+            fixedAccessRight();
     }
     private void init(Source srcXsltDataset, Source srcXsltFiles) throws BridgeException {
         TransformerFactory transFact = new net.sf.saxon.TransformerFactoryImpl();
@@ -73,6 +77,7 @@ public class Dv2EasyTransformer {
             StringWriter writer = new StringWriter();
             transformer.transform(new DOMSource(doc), new StreamResult(writer));
             datasetXml = writer.toString();
+            LOG.info(datasetXml);
         } catch (TransformerConfigurationException e) {
             LOG.error("ERROR: transformToDataset - TransformerConfigurationException, caused by: " + e.getMessage());
             throw new BridgeException("transformToDataset - TransformerConfigurationException, caused by: " + e.getMessage()
@@ -85,7 +90,6 @@ public class Dv2EasyTransformer {
     }
 
     private void transformToFilesXml(Document doc) throws BridgeException {
-        XPath xPath = XPathFactory.newInstance().newXPath();
         try {
             NodeList otherMatElementList = (NodeList) xPath.evaluate("//*[local-name()='otherMat']", doc, XPathConstants.NODESET);
             for(int i = 0; i < otherMatElementList.getLength(); i++) {
@@ -101,7 +105,7 @@ public class Dv2EasyTransformer {
                             boolean restrictedFile = (FilePermissionChecker.check(url) == FilePermissionChecker.PermissionStatus.RESTRICTED);
                             if (restrictedFile) {
                                 Node restrictedNode = doc.createElement("restricted");
-                                restrictedNode.setNodeValue("true");
+                                //restrictedNode.setNodeValue("true");
                                 Text nodeVal = doc.createTextNode("true");
                                 restrictedNode.appendChild(nodeVal);
                                 otherMatElement.appendChild(restrictedNode);
@@ -173,5 +177,57 @@ public class Dv2EasyTransformer {
 
     public Map<String, String> getPublicFiles() {
         return publicFiles;
+    }
+
+    /*This accessRight workaround: permission request is possible per file in Dataverse,
+    * but this is not exported to DDI*/
+    private void fixedAccessRight() throws BridgeException {
+        Document datasetDoc= loadXMLFromString(datasetXml);
+        try {
+            Node accessRightsNode = (Node) xPath.evaluate("//*[local-name()='accessRights']", datasetDoc, XPathConstants.NODE);
+            accessRightsNode.setTextContent("REQUEST_PERMISSION");
+            Transformer tf = TransformerFactory.newInstance().newTransformer();
+            tf.setOutputProperty(OutputKeys.INDENT, "yes");
+            StringWriter writer = new StringWriter();
+            tf.transform(new DOMSource(datasetDoc), new StreamResult(writer));
+            datasetXml = writer.toString();
+            LOG.debug(datasetXml);
+        } catch (XPathExpressionException e) {
+            LOG.error("XPathExpressionException, causes by: " + e.getMessage());
+            throw new BridgeException("fixedAccessRight - XPathExpressionException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
+        } catch (TransformerConfigurationException e) {
+            LOG.error("XPathExpressionException, causes by: " + e.getMessage());
+            throw new BridgeException("fixedAccessRight - TransformerConfigurationException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
+        } catch (TransformerException e) {
+            LOG.error("XPathExpressionException, causes by: " + e.getMessage());
+            throw new BridgeException("fixedAccessRight - TransformerException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
+        }
+
+    }
+
+    private Document loadXMLFromString(String xml) throws BridgeException
+    {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = null;
+        try {
+            builder = factory.newDocumentBuilder();
+            InputSource is = new InputSource(new StringReader(xml));
+            return builder.parse(is);
+        } catch (ParserConfigurationException e) {
+            LOG.error("ParserConfigurationException, causes by: " + e.getMessage());
+            throw new BridgeException("loadXMLFromString - XPathExpressionException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
+        } catch (SAXException e) {
+            LOG.error("SAXException, causes by: " + e.getMessage());
+            throw new BridgeException("loadXMLFromString - XPathExpressionException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
+        } catch (IOException e) {
+            LOG.error("IOException, causes by: " + e.getMessage());
+            throw new BridgeException("loadXMLFromString - XPathExpressionException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
+        }
     }
 }

@@ -320,17 +320,18 @@ public class ArchiveApiController implements ArchiveApi {
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.single())
                 .doOnError(ex -> {
+                    String msg="";
                     LOG.info(ex.getClass().getName());
                     if (ex instanceof BridgeException) {
                         BridgeException be = (BridgeException) ex;
-                        String msg = "[" + be.getClassName() + "] " + be.getMessage();
-                        LOG.error(msg);
-                        archived.setAuditLog(archived.getAuditLog() + " " + msg);
-                        archived.setEndTime(new Date());
-                        archivedDao.update(archived);
-                    }
+                        msg = "[" + be.getClassName() + "] " + be.getMessage();
 
-                    archived.setAuditLog(ex.getMessage());
+                    } else {
+                        msg = ex.getMessage();
+                    }
+                    LOG.error(msg);
+                    archived.setAuditLog(archived.getAuditLog() + " " + msg);
+                    archived.setEndTime(new Date());
                     archivedDao.update(archived);
                 })
                 .doOnComplete(new Action() {
