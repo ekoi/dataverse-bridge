@@ -322,7 +322,12 @@ public class ArchiveApiController implements ArchiveApi {
                 .doOnError(ex -> {
                     LOG.info(ex.getClass().getName());
                     if (ex instanceof BridgeException) {
-                        LOG.info(((BridgeException) ex).getClassName() + "\t" + ex.getMessage());
+                        BridgeException be = (BridgeException) ex;
+                        String msg = "[" + be.getClassName() + "] " + be.getMessage();
+                        LOG.error(msg);
+                        archived.setAuditLog(archived.getAuditLog() + " " + msg);
+                        archived.setEndTime(new Date());
+                        archivedDao.update(archived);
                     }
 
                     archived.setAuditLog(ex.getMessage());
@@ -338,7 +343,7 @@ public class ArchiveApiController implements ArchiveApi {
                         archived.setEndTime(new Date());
                         archived.setState(ao.getStatus());
                         LOG.info("Ingest finish. Status " + ao.getStatus());
-                        if (!ao.getStatus().equals(StateEnum.ARCHIVED)) {
+                        if (ao.getStatus().equals(StateEnum.ARCHIVED.toString())) {
                             //send mail to admin
                             //delete bagitdir and its zip.
                             LOG.info(archived.getBagitDir());
@@ -352,21 +357,12 @@ public class ArchiveApiController implements ArchiveApi {
                            }
                         }
                         archivedDao.update(archived);
-//                        if (archivedObjectHolderState.getState().equals("SUCCESS")){
-//                            archivedDao.update(archived);
-//                            //check state, it can be failed or archived
-//                            //send mail to ingester
-//                            LOG.info("Archiving finish.");
-//                        } else {
-//                            //rollback
-//                          //  archivedDao.delete(archived);
-//                        }
                     }
                 })
                 .subscribe(arch -> {
                     LOG.info(arch.getState());
                 }, throwable -> {
-                    LOG.info(throwable.getMessage());
+                    LOG.error(throwable.getMessage());
                 });
 
         return archived;

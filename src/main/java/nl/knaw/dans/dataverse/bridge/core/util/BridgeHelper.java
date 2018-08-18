@@ -55,7 +55,7 @@ public class BridgeHelper {
         return HttpClients.custom().setDefaultCredentialsProvider(credsProv).setDefaultRequestConfig(config).build();
     }
 
-    public static CloseableHttpResponse sendChunk(DigestInputStream dis, int size, String method, URI uri, String filename, String mimeType, CloseableHttpClient http, boolean inProgress) throws Exception {
+    public static CloseableHttpResponse sendChunk(DigestInputStream dis, int size, String method, URI uri, String filename, String mimeType, CloseableHttpClient http, boolean inProgress) throws IOException {
         byte[] chunk = readChunk(dis, size);
         String md5 = new String(Hex.encodeHex(dis.getMessageDigest().digest()));
         HttpUriRequest request = RequestBuilder.create(method).setUri(uri).setConfig(RequestConfig.custom()
@@ -73,7 +73,7 @@ public class BridgeHelper {
         return response;
     }
 
-    private static byte[] readChunk(InputStream is, int size) throws Exception {
+    private static byte[] readChunk(InputStream is, int size) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] bytes = new byte[size];
         int c = is.read(bytes);

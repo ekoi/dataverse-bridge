@@ -1,6 +1,7 @@
 package nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy;
 
 import nl.knaw.dans.dataverse.bridge.core.util.FilePermissionChecker;
+import nl.knaw.dans.dataverse.bridge.exception.BridgeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -42,28 +43,30 @@ public class Dv2EasyTransformer {
     private Map<String, String> publicFiles = new HashMap<String, String>();
 
 
-    public Dv2EasyTransformer(String ddiEportUrl, String apiToken, Source srcXsltDataset, Source srcXsltFiles) {
+    public Dv2EasyTransformer(String ddiEportUrl, String apiToken, Source srcXsltDataset, Source srcXsltFiles) throws BridgeException {
         this.DDI_EXPORT_URL = ddiEportUrl;
         init(srcXsltDataset, srcXsltFiles);
         build();
     }
 
-    private void build(){
+    private void build() throws BridgeException {
         Document ddiDocument = getDocument();//buildDocument
         transformToDataset(ddiDocument);
         transformToFilesXml(ddiDocument);
     }
-    private void init(Source srcXsltDataset, Source srcXsltFiles) {
+    private void init(Source srcXsltDataset, Source srcXsltFiles) throws BridgeException {
         TransformerFactory transFact = new net.sf.saxon.TransformerFactoryImpl();
         try {
             cachedXSLTDataset = transFact.newTemplates(srcXsltDataset);
             cachedXSLTFiles = transFact.newTemplates(srcXsltFiles);
         } catch (TransformerConfigurationException e) {
             LOG.error("ERROR: TransformerConfigurationException, caused by: " + e.getMessage());
+            throw new BridgeException("init - TransformerConfigurationException, caused by: " + e.getMessage()
+                    , e, "Dv2EasyTransformer");
         }
     }
 
-    private void transformToDataset(Document doc) {
+    private void transformToDataset(Document doc) throws BridgeException {
         try {
             Transformer transformer = cachedXSLTDataset.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -72,12 +75,16 @@ public class Dv2EasyTransformer {
             datasetXml = writer.toString();
         } catch (TransformerConfigurationException e) {
             LOG.error("ERROR: transformToDataset - TransformerConfigurationException, caused by: " + e.getMessage());
+            throw new BridgeException("transformToDataset - TransformerConfigurationException, caused by: " + e.getMessage()
+                    , e, "Dv2EasyTransformer");
         } catch (TransformerException e) {
             LOG.error("ERROR: transformToDataset - TransformerException, caused by: " + e.getMessage());
+            throw new BridgeException("transformToDataset - TransformerException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
         }
     }
 
-    private void transformToFilesXml(Document doc) {
+    private void transformToFilesXml(Document doc) throws BridgeException {
         XPath xPath = XPathFactory.newInstance().newXPath();
         try {
             NodeList otherMatElementList = (NodeList) xPath.evaluate("//*[local-name()='otherMat']", doc, XPathConstants.NODESET);
@@ -114,14 +121,20 @@ public class Dv2EasyTransformer {
             LOG.debug("filesXml: " + filesXml);
         } catch (XPathExpressionException e) {
             LOG.error("XPathExpressionException, causes by: " + e.getMessage());
+            throw new BridgeException("transformToFilesXml - XPathExpressionException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
         } catch (TransformerConfigurationException e) {
             LOG.error("ERROR: transformToDataset - TransformerConfigurationException, caused by: " + e.getMessage());
+            throw new BridgeException("transformToFilesXml - TransformerException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
         } catch (TransformerException e) {
             LOG.error("ERROR: transformToDataset - TransformerException, caused by: " + e.getMessage());
+            throw new BridgeException("transformToFilesXml - TransformerException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
         }
     }
 
-    private Document getDocument() {
+    private Document getDocument() throws BridgeException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         DocumentBuilder builder;
@@ -131,10 +144,16 @@ public class Dv2EasyTransformer {
             doc = builder.parse(DDI_EXPORT_URL);
         } catch (ParserConfigurationException e) {
             LOG.error("ERROR: getDocument - ParserConfigurationException, caused by: " + e.getMessage());
+            throw new BridgeException("getDocument - ParserConfigurationException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
         } catch (SAXException e) {
             LOG.error("ERROR: getDocument - SAXException, caused by: " + e.getMessage());
+            throw new BridgeException("SAXException - ParserConfigurationException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
         } catch (IOException e) {
             LOG.error("ERROR: getDocument - IOException, caused by: " + e.getMessage());
+            throw new BridgeException("getDocument - IOException, caused by: " + e.getMessage(), e
+                    , "Dv2EasyTransformer");
         }
         return doc;
     }
