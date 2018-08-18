@@ -126,7 +126,7 @@
                 </xsl:otherwise>
             </xsl:choose>
              -->
-            <ddm:accessRights>REQUEST_PERMISSION</ddm:accessRights>
+            <ddm:accessRights>OPEN_ACCESS</ddm:accessRights>
             <!-- NO_ACCESS as default seems a bit 'dark archive' -->
         </ddm:profile>
     </xsl:template>
