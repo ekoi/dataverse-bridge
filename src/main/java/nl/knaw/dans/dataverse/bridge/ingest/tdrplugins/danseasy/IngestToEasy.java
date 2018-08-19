@@ -41,7 +41,6 @@ public class IngestToEasy implements IDataverseIngest {
     public ResponseDataHolder execute(File bagitZipFile, IRI colIri, String uid, String pw) throws BridgeException{
         long checkingTimePeriod = 5000;
         ResponseDataHolder responseDataHolder = null;
-        StringBuffer sb = new StringBuffer("");
         try {
             DigestInputStream dis = getDigestInputStream(bagitZipFile);
 
@@ -54,6 +53,7 @@ public class IngestToEasy implements IDataverseIngest {
                 LOG.error("FAILED. Status = " + response.getStatusLine());
                 LOG.error("Response body follows:");
                 LOG.error(bodyText);
+                throw new BridgeException("Status = " + response.getStatusLine() + ". Response body follows:" + bodyText, this.getClass());
             }
             LOG.info("SUCCESS. Deposit receipt follows:");
             LOG.info(bodyText);
@@ -79,12 +79,8 @@ public class IngestToEasy implements IDataverseIngest {
             }
 
             LOG.info("SUCCESS. Deposit receipt follows:");
-            sb.append("<bodyText>");
-            sb.append(bodyText);
-            sb.append("</bodyText>");
             LOG.info(bodyText);
 
-            // 4. Get the statement URL. This is the URL from which to retrieve the current status of the deposit.
             LOG.info("Retrieving Statement IRI (Stat-IRI) from deposit receipt ...");
             receipt = BridgeHelper.parse(bodyText);
             Link statLink = receipt.getLink("http://purl.org/net/sword/terms/statement");
@@ -94,22 +90,16 @@ public class IngestToEasy implements IDataverseIngest {
             LOG.info(responseDataHolder.getState());
         } catch (FileNotFoundException e) {
             LOG.error("FileNotFoundException: " + e.getMessage());
-            new BridgeException("execute - FileNotFoundException, msg: " + sb, e, this.getClass());
+            new BridgeException("execute - FileNotFoundException, msg: " + e.getMessage(), e, this.getClass());
         } catch (NoSuchAlgorithmException e) {
             LOG.error("NoSuchAlgorithmException: " + e.getMessage());
-            new BridgeException("execute - NoSuchAlgorithmException, msg: " + sb, e, this.getClass());
+            new BridgeException("execute - NoSuchAlgorithmException, msg: " + e.getMessage(), e, this.getClass());
         } catch (URISyntaxException e) {
             LOG.error("URISyntaxException: " + e.getMessage());
-            new BridgeException("execute - URISyntaxException, msg: " + sb, e, this.getClass());
+            new BridgeException("execute - URISyntaxException, msg: " + e.getMessage(), e, this.getClass());
         } catch (IOException e) {
-            e.printStackTrace();
+            new BridgeException("execute - IOException, msg: " + e.getMessage(), e, this.getClass());
         }
-        //} catch (Exception e) {
-//            LOG.error("ERROR: " + e.getMessage());
-//            sb.append("\nERROR: " + e.getMessage() + "\n");
-//            new BridgeException("execute - msg: " + sb, e, "IngestToEasy");
-            //send mail
-        //}
         return responseDataHolder;
     }
 
