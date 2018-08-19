@@ -40,7 +40,7 @@ public class EasyBagitComposer {
         try {
             Files.createDirectories(metadataDir);
         } catch (IOException e) {
-            throw new BridgeException("buildEasyBag - Files.createDirectories, msg: " + e.getMessage(), e, "EasyBagitComposer");
+            throw new BridgeException("buildEasyBag - Files.createDirectories, msg: " + e.getMessage(), e, this.getClass());
         }
         createDatasetXmlFile(datasetXml);
         createFilesXmlFile(filesXml);
@@ -100,16 +100,16 @@ public class EasyBagitComposer {
             try {
                 FileUtils.copyURLToFile(new URL(publicFile.getValue()),  new File(bagTempDir + "/data/" + publicFile.getKey()));
             } catch (IOException e) {
-                throw new BridgeException("[EasyBagitComposer - downloadFiles] Public File. URL: " + publicFile.getValue()
-                        + " File name: " + publicFile.getKey() + "; errror msg: " + e.getMessage(), e, "IOException");
+                throw new BridgeException("[downloadFiles] Public File. URL: " + publicFile.getValue()
+                        + " File name: " + publicFile.getKey() + "; errror msg: " + e.getMessage(), e, this.getClass());
             }
         }
         for (Map.Entry<String, String> restrictedFile : restrictedFiles.entrySet()){
             try {
                 FileUtils.copyURLToFile(new URL(restrictedFile.getValue() + "?key=" + apiToken), new File(bagTempDir + "/data/" + restrictedFile.getKey()));
             } catch (IOException e) {
-                throw new BridgeException("[EasyBagitComposer - downloadFiles] - Restricted File. URL: " + restrictedFile.getValue()
-                        + " File name: " + restrictedFile.getKey() + "; errror msg: " + e.getMessage(), e, "IOException");
+                throw new BridgeException("[downloadFiles] - Restricted File. URL: " + restrictedFile.getValue()
+                        + " File name: " + restrictedFile.getKey() + "; errror msg: " + e.getMessage(), e, this.getClass());
             }
         }
     }
@@ -132,7 +132,7 @@ public class EasyBagitComposer {
         try {
             BridgeHelper.zipDirectory(bagTempDir.toFile(), zipFile);
         } catch (ZipException e) {
-            throw new BridgeException("createBagitZip, msg: " + e.getMessage(), e, "EasyBagitComposer");
+            throw new BridgeException("createBagitZip, msg: " + e.getMessage(), e, this.getClass());
 
         }
         return zipFile;
@@ -153,7 +153,9 @@ public class EasyBagitComposer {
             datasetXmlFile.createNewFile();
             Files.write(datasetXmlFile.toPath(), datasetXml.getBytes());;
         } catch (IOException e) {
-            throw new BridgeException("createDatasetXmlFile, msg: " + e.getMessage(), e, "EasyBagitComposer");
+            String msg = "createDatasetXmlFile, msg: " + e.getMessage();
+            LOG.error("ERROR: " , msg);
+            throw new BridgeException(msg, e, this.getClass());
         }
     }
 
@@ -162,7 +164,9 @@ public class EasyBagitComposer {
         try {
             Files.write(filesXmlFile.toPath(), filesXml.getBytes());
         } catch (IOException e) {
-            throw new BridgeException("createFilesXmlFile, msg: " + e.getMessage(), e, "EasyBagitComposer");
+            String msg = "createFilesXmlFile, msg: " + e.getMessage();
+            LOG.error(msg);
+            throw new BridgeException(msg, e, this.getClass());
         }
     }
 
@@ -171,8 +175,9 @@ public class EasyBagitComposer {
             bagitDir = Files.createTempDirectory(Paths.get(baseDir), "bagit");
             return bagitDir;
         } catch (IOException e) {
-            LOG.error("ERROR: transformToFilesXmlAndCopyFiles - createTempDirectory - IOException, caused by: " + e.getMessage());
-            throw new BridgeException(e.getMessage(), e, "IOException");
+            String msg = "createTempDirectory, msg: " + e.getMessage();
+            LOG.error(msg);
+            throw new BridgeException(msg, e, this.getClass());
         }
     }
 

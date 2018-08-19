@@ -28,7 +28,7 @@ public class Archived   {
   @NotNull
   private String tdrAppName;
 
-  private String doi;
+  private String pid;
 
   @NotNull
   @Temporal(value = TemporalType.TIMESTAMP)
@@ -43,7 +43,7 @@ public class Archived   {
   private String state;
 
   private String bagitDir;
-
+  @Column(columnDefinition="TEXT")
   private String auditLog;
 
 
@@ -51,12 +51,12 @@ public class Archived   {
     return id;
   }
 
-  public String getDoi() {
-    return doi;
+  public String getPid() {
+    return pid;
   }
 
-  public void setDoi(String doi) {
-    this.doi = doi;
+  public void setPid(String pid) {
+    this.pid = pid;
   }
 
   public Date getStartTime() {

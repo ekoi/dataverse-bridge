@@ -21,7 +21,7 @@ import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-17T12:02:34.262+02:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-18T22:12:26.512+02:00")
 
 @Api(value = "archive", description = "the archive API")
 public interface ArchiveApi {
@@ -53,7 +53,7 @@ public interface ArchiveApi {
         if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
             if (getAcceptHeader().get().contains("application/json")) {
                 try {
-                    return new ResponseEntity<>(getObjectMapper().get().readValue("{  \"srcXml\" : \"srcXml\",  \"landingPage\" : \"landingPage\",  \"startTime\" : \"2000-01-23\",  \"id\" : 0,  \"endTime\" : \"2000-01-23\",  \"state\" : \"IN-PROGRESS\",  \"srcVersion\" : \"srcVersion\",  \"targetIri\" : \"targetIri\",  \"doi\" : \"doi\"}", nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.NOT_IMPLEMENTED);
+                    return new ResponseEntity<>(getObjectMapper().get().readValue("{  \"srcXml\" : \"srcXml\",  \"landingPage\" : \"landingPage\",  \"pid\" : \"pid\",  \"startTime\" : \"2000-01-23\",  \"id\" : 0,  \"endTime\" : \"2000-01-23\",  \"state\" : \"IN-PROGRESS\",  \"srcVersion\" : \"srcVersion\",  \"targetIri\" : \"targetIri\"}", nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.NOT_IMPLEMENTED);
                 } catch (IOException e) {
                     log.error("Couldn't serialize response for content type application/json", e);
                     return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -111,7 +111,7 @@ public interface ArchiveApi {
         if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
             if (getAcceptHeader().get().contains("application/json")) {
                 try {
-                    return new ResponseEntity<>(getObjectMapper().get().readValue("[ {  \"srcXml\" : \"srcXml\",  \"landingPage\" : \"landingPage\",  \"startTime\" : \"2000-01-23\",  \"id\" : 0,  \"endTime\" : \"2000-01-23\",  \"state\" : \"IN-PROGRESS\",  \"srcVersion\" : \"srcVersion\",  \"targetIri\" : \"targetIri\",  \"doi\" : \"doi\"}, {  \"srcXml\" : \"srcXml\",  \"landingPage\" : \"landingPage\",  \"startTime\" : \"2000-01-23\",  \"id\" : 0,  \"endTime\" : \"2000-01-23\",  \"state\" : \"IN-PROGRESS\",  \"srcVersion\" : \"srcVersion\",  \"targetIri\" : \"targetIri\",  \"doi\" : \"doi\"} ]", List.class), HttpStatus.NOT_IMPLEMENTED);
+                    return new ResponseEntity<>(getObjectMapper().get().readValue("[ {  \"srcXml\" : \"srcXml\",  \"landingPage\" : \"landingPage\",  \"pid\" : \"pid\",  \"startTime\" : \"2000-01-23\",  \"id\" : 0,  \"endTime\" : \"2000-01-23\",  \"state\" : \"IN-PROGRESS\",  \"srcVersion\" : \"srcVersion\",  \"targetIri\" : \"targetIri\"}, {  \"srcXml\" : \"srcXml\",  \"landingPage\" : \"landingPage\",  \"pid\" : \"pid\",  \"startTime\" : \"2000-01-23\",  \"id\" : 0,  \"endTime\" : \"2000-01-23\",  \"state\" : \"IN-PROGRESS\",  \"srcVersion\" : \"srcVersion\",  \"targetIri\" : \"targetIri\"} ]", List.class), HttpStatus.NOT_IMPLEMENTED);
                 } catch (IOException e) {
                     log.error("Couldn't serialize response for content type application/json", e);
                     return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -135,7 +135,7 @@ public interface ArchiveApi {
         if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
             if (getAcceptHeader().get().contains("application/json")) {
                 try {
-                    return new ResponseEntity<>(getObjectMapper().get().readValue("{  \"srcXml\" : \"srcXml\",  \"landingPage\" : \"landingPage\",  \"startTime\" : \"2000-01-23\",  \"id\" : 0,  \"endTime\" : \"2000-01-23\",  \"state\" : \"IN-PROGRESS\",  \"srcVersion\" : \"srcVersion\",  \"targetIri\" : \"targetIri\",  \"doi\" : \"doi\"}", nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.NOT_IMPLEMENTED);
+                    return new ResponseEntity<>(getObjectMapper().get().readValue("{  \"srcXml\" : \"srcXml\",  \"landingPage\" : \"landingPage\",  \"pid\" : \"pid\",  \"startTime\" : \"2000-01-23\",  \"id\" : 0,  \"endTime\" : \"2000-01-23\",  \"state\" : \"IN-PROGRESS\",  \"srcVersion\" : \"srcVersion\",  \"targetIri\" : \"targetIri\"}", nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.NOT_IMPLEMENTED);
                 } catch (IOException e) {
                     log.error("Couldn't serialize response for content type application/json", e);
                     return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);

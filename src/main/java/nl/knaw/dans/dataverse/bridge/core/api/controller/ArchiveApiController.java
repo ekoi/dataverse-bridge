@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.Flowable;
-import io.reactivex.functions.Action;
 import io.reactivex.schedulers.Schedulers;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -19,8 +18,8 @@ import nl.knaw.dans.dataverse.bridge.exception.BridgeException;
 import nl.knaw.dans.dataverse.bridge.generated.api.ArchiveApi;
 import nl.knaw.dans.dataverse.bridge.generated.model.Error;
 import nl.knaw.dans.dataverse.bridge.generated.model.IngestData;
-import nl.knaw.dans.dataverse.bridge.ingest.ArchivedObject;
 import nl.knaw.dans.dataverse.bridge.ingest.IDataverseIngest;
+import nl.knaw.dans.dataverse.bridge.ingest.ResponseDataHolder;
 import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy.Dv2EasyTransformer;
 import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy.EasyBagitComposer;
 import nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy.IngestToEasy;
@@ -293,7 +292,6 @@ public class ArchiveApiController implements ArchiveApi {
 
     private Archived ingestToEASY(String bridgeServerBaseUrl, IngestData ingestData) {
         Archived archived = createNewArchived(ingestData);
-        final ArchivedObjectHolder archivedObjectHolderState = new ArchivedObjectHolder();
         Flowable.fromCallable(() -> {
             Dv2EasyTransformer dv2EasyTransformer = new Dv2EasyTransformer(ingestData.getSrcData().getSrcXml()
                     , ingestData.getSrcData().getApiToken()
@@ -312,16 +310,15 @@ public class ArchiveApiController implements ArchiveApi {
             File bagitZipFile = ebc.createBagitZip();
 
             IDataverseIngest di = new IngestToEasy();
-            final ArchivedObject easyResponse = di.execute(bagitZipFile, new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
-            archivedObjectHolderState.setArchivedObject(easyResponse);
-            LOG.info("status: " + easyResponse.getStatus());
-            return archived;
+            final ResponseDataHolder easyResponseData = di.execute(bagitZipFile, new IRI(ingestData.getTdrData().getIri()), ingestData.getTdrData().getUsername(), ingestData.getTdrData().getPassword());
+            LOG.info("status: " + easyResponseData.getState());
+            LOG.info("doi: " + easyResponseData.getPid());
+            return easyResponseData;
         })
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.single())
                 .doOnError(ex -> {
                     String msg="";
-                    LOG.info(ex.getClass().getName());
                     if (ex instanceof BridgeException) {
                         BridgeException be = (BridgeException) ex;
                         msg = "[" + be.getClassName() + "] " + be.getMessage();
@@ -330,63 +327,44 @@ public class ArchiveApiController implements ArchiveApi {
                         msg = ex.getMessage();
                     }
                     LOG.error(msg);
-                    archived.setAuditLog(archived.getAuditLog() + " " + msg);
+                    String prevMsg = archived.getAuditLog();
+                    if (prevMsg != null)
+                        msg = prevMsg + "|" + msg;
+                    archived.setAuditLog(msg);
+                   // archived.setState("ERROR[" + archived.getId() + "]");
+                    archived.setState(StateEnum.ERROR.toString());
                     archived.setEndTime(new Date());
                     archivedDao.update(archived);
                 })
-                .doOnComplete(new Action() {
-                    @Override
-                    public void run()  {
-                        ArchivedObject ao = archivedObjectHolderState.getArchivedObject();
-                        String status  = ao.getStatus();
-                        archived.setLandingPage(ao.getLandingPage());
-                        archived.setDoi(ao.getPid());
-                        archived.setEndTime(new Date());
-                        archived.setState(ao.getStatus());
-                        LOG.info("Ingest finish. Status " + ao.getStatus());
-                        if (ao.getStatus().equals(StateEnum.ARCHIVED.toString())) {
-                            //send mail to admin
-                            //delete bagitdir and its zip.
-                            LOG.info(archived.getBagitDir());
-                           File bagDirToDelete = FileUtils.getFile(archived.getBagitDir());
-                           boolean deletedBagDirIsOk = FileUtils.deleteQuietly(bagDirToDelete);
-                           File bagDirZipToDelete = FileUtils.getFile(archived.getBagitDir()+ ".zip");
-                           boolean deletedBagDirZipIsOk = FileUtils.deleteQuietly(bagDirZipToDelete);
-                           if (deletedBagDirIsOk && deletedBagDirZipIsOk) {
-                               LOG.info("Bagit files are deleted.");
-                               archived.setBagitDir("DELETED");
-                           }
+                .subscribe(erd -> {
+                    archived.setLandingPage(erd.getLandingPage());
+                    archived.setPid(erd.getPid());
+                    archived.setEndTime(new Date());
+                    archived.setState(erd.getState());
+                    archived.setAuditLog(erd.getFeedXml());
+                    LOG.info("Ingest finish. Status " + erd.getState());
+                    if (erd.getState().equals(StateEnum.ARCHIVED.toString())) {
+                        //send mail to admin
+                        //delete bagitdir and its zip.
+                        LOG.info(archived.getBagitDir());
+                        File bagDirToDelete = FileUtils.getFile(archived.getBagitDir());
+                        boolean deletedBagDirIsOk = FileUtils.deleteQuietly(bagDirToDelete);
+                        File bagDirZipToDelete = FileUtils.getFile(archived.getBagitDir()+ ".zip");
+                        boolean deletedBagDirZipIsOk = FileUtils.deleteQuietly(bagDirZipToDelete);
+                        if (deletedBagDirIsOk && deletedBagDirZipIsOk) {
+                            LOG.info("Bagit files are deleted.");
+                            archived.setBagitDir("DELETED");
+                        } else {
+                            LOG.warn(bagDirZipToDelete + " is not deleted");
+                            LOG.warn(bagDirZipToDelete + ".zip is not deleted");
                         }
-                        archivedDao.update(archived);
                     }
-                })
-                .subscribe(arch -> {
-                    LOG.info(arch.getState());
+                    archivedDao.update(archived);
                 }, throwable -> {
                     LOG.error(throwable.getMessage());
                 });
 
         return archived;
-    }
-    private class ArchivedObjectHolder {
-        private boolean finish;
-        ArchivedObject archivedObject;
-
-        public ArchivedObject getArchivedObject() {
-            return archivedObject;
-        }
-
-        public void setArchivedObject(ArchivedObject archivedObject) {
-            this.archivedObject = archivedObject;
-        }
-
-        public boolean isFinish() {
-            return finish;
-        }
-
-        public void setFinish(boolean finish) {
-            this.finish = finish;
-        }
     }
 
     private Archived createNewArchived(IngestData ingestData) {

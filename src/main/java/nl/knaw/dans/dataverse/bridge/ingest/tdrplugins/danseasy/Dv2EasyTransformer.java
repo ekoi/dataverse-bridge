@@ -66,7 +66,7 @@ public class Dv2EasyTransformer {
         } catch (TransformerConfigurationException e) {
             LOG.error("ERROR: TransformerConfigurationException, caused by: " + e.getMessage());
             throw new BridgeException("init - TransformerConfigurationException, caused by: " + e.getMessage()
-                    , e, "Dv2EasyTransformer");
+                    , e, this.getClass());
         }
     }
 
@@ -81,11 +81,11 @@ public class Dv2EasyTransformer {
         } catch (TransformerConfigurationException e) {
             LOG.error("ERROR: transformToDataset - TransformerConfigurationException, caused by: " + e.getMessage());
             throw new BridgeException("transformToDataset - TransformerConfigurationException, caused by: " + e.getMessage()
-                    , e, "Dv2EasyTransformer");
+                    , e, this.getClass());
         } catch (TransformerException e) {
             LOG.error("ERROR: transformToDataset - TransformerException, caused by: " + e.getMessage());
             throw new BridgeException("transformToDataset - TransformerException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         }
     }
 
@@ -126,15 +126,15 @@ public class Dv2EasyTransformer {
         } catch (XPathExpressionException e) {
             LOG.error("XPathExpressionException, causes by: " + e.getMessage());
             throw new BridgeException("transformToFilesXml - XPathExpressionException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         } catch (TransformerConfigurationException e) {
             LOG.error("ERROR: transformToDataset - TransformerConfigurationException, caused by: " + e.getMessage());
             throw new BridgeException("transformToFilesXml - TransformerException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         } catch (TransformerException e) {
             LOG.error("ERROR: transformToDataset - TransformerException, caused by: " + e.getMessage());
             throw new BridgeException("transformToFilesXml - TransformerException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         }
     }
 
@@ -149,15 +149,15 @@ public class Dv2EasyTransformer {
         } catch (ParserConfigurationException e) {
             LOG.error("ERROR: getDocument - ParserConfigurationException, caused by: " + e.getMessage());
             throw new BridgeException("getDocument - ParserConfigurationException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         } catch (SAXException e) {
             LOG.error("ERROR: getDocument - SAXException, caused by: " + e.getMessage());
             throw new BridgeException("SAXException - ParserConfigurationException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         } catch (IOException e) {
             LOG.error("ERROR: getDocument - IOException, caused by: " + e.getMessage());
             throw new BridgeException("getDocument - IOException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         }
         return doc;
     }
@@ -167,7 +167,6 @@ public class Dv2EasyTransformer {
     }
 
     public String getFilesXml() {
-        LOG.info(filesXml);
         return filesXml;
     }
 
@@ -195,15 +194,15 @@ public class Dv2EasyTransformer {
         } catch (XPathExpressionException e) {
             LOG.error("XPathExpressionException, causes by: " + e.getMessage());
             throw new BridgeException("fixedAccessRight - XPathExpressionException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         } catch (TransformerConfigurationException e) {
             LOG.error("XPathExpressionException, causes by: " + e.getMessage());
             throw new BridgeException("fixedAccessRight - TransformerConfigurationException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         } catch (TransformerException e) {
             LOG.error("XPathExpressionException, causes by: " + e.getMessage());
             throw new BridgeException("fixedAccessRight - TransformerException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         }
 
     }
@@ -219,15 +218,15 @@ public class Dv2EasyTransformer {
         } catch (ParserConfigurationException e) {
             LOG.error("ParserConfigurationException, causes by: " + e.getMessage());
             throw new BridgeException("loadXMLFromString - XPathExpressionException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         } catch (SAXException e) {
             LOG.error("SAXException, causes by: " + e.getMessage());
             throw new BridgeException("loadXMLFromString - XPathExpressionException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         } catch (IOException e) {
             LOG.error("IOException, causes by: " + e.getMessage());
             throw new BridgeException("loadXMLFromString - XPathExpressionException, caused by: " + e.getMessage(), e
-                    , "Dv2EasyTransformer");
+                    , this.getClass());
         }
     }
 }

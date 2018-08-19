@@ -10,14 +10,14 @@ public class BridgeException extends Exception {
         this.className = className;
     }
 
-    public BridgeException(String message, Throwable error, String className) {
+    public BridgeException(String message, Throwable error, Class clazz) {
         super(message, error);
-        this.className = className;
+        this.className = clazz.getName();
     }
 
-    public BridgeException(Throwable e, String className) {
+    public BridgeException(Throwable e, Class clazz) {
         super(e);
-        this.className = className;
+        this.className = clazz.getName();
     }
 
     public String getClassName() {
