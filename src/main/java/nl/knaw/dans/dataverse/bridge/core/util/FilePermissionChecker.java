@@ -8,6 +8,9 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+/*
+ * @author: Eko Indarto
+ */
 public class FilePermissionChecker {
     private static final Logger LOG = LoggerFactory.getLogger(FilePermissionChecker.class);
 

@@ -4,9 +4,12 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
 
+/*
+    @author Eko Indarto
+ */
 @Entity
 @Table(uniqueConstraints =
-@UniqueConstraint(columnNames = {"srcXml", "srcVersion", "targetIri"}))
+@UniqueConstraint(columnNames = {"srcMetadataXml", "srcMetadataVersion", "targetIri"}))
 public class Archived   {
 
   @Id
@@ -14,19 +17,19 @@ public class Archived   {
   private Long id;
 
   @NotNull
-  private String srcXml;
+  private String srcMetadataXml;
 
-  @NotNull
+  //@NotNull
   private String srcAppName;
 
   @NotNull
-  private String srcVersion;
+  private String srcMetadataVersion;
 
   @NotNull
   private String targetIri;
 
   @NotNull
-  private String tdrAppName;
+  private String tdrName;
 
   private String pid;
 
@@ -83,12 +86,12 @@ public class Archived   {
     this.landingPage = landingPage;
   }
 
-  public String getSrcXml() {
-    return srcXml;
+  public String getSrcMetadataXml() {
+    return srcMetadataXml;
   }
 
-  public void setSrcXml(String srcXml) {
-    this.srcXml = srcXml;
+  public void setSrcMetadataXml(String srcMetadataXml) {
+    this.srcMetadataXml = srcMetadataXml;
   }
 
   public String getSrcAppName() {
@@ -99,12 +102,12 @@ public class Archived   {
     this.srcAppName = srcAppName;
   }
 
-  public String getSrcVersion() {
-    return srcVersion;
+  public String getSrcMetadataVersion() {
+    return srcMetadataVersion;
   }
 
-  public void setSrcVersion(String srcVersion) {
-    this.srcVersion = srcVersion;
+  public void setSrcMetadataVersion(String srcMetadataVersion) {
+    this.srcMetadataVersion = srcMetadataVersion;
   }
 
   public String getTargetIri() {
@@ -115,12 +118,12 @@ public class Archived   {
     this.targetIri = targetIri;
   }
 
-  public String getTdrAppName() {
-    return tdrAppName;
+  public String getTdrName() {
+    return tdrName;
   }
 
-  public void setTdrAppName(String tdrAppName) {
-    this.tdrAppName = tdrAppName;
+  public void setTdrName(String tdrName) {
+    this.tdrName = tdrName;
   }
 
   public String getState() {

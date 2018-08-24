@@ -4,7 +4,7 @@
     <artifactId>dataverse-bridge</artifactId>
     <packaging>jar</packaging>
     <name>dataverse-bridge</name>
-    <version>0.1.0</version>
+    <version>0.5.0</version>
     <properties>
         <java.version>1.8</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -53,7 +53,7 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
+                <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -94,7 +94,7 @@
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>2.4.0</version>
+            <version>2.4.1</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -112,6 +112,13 @@
             <artifactId>httpclient</artifactId>
             <version>4.5</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.7</version>
+        </dependency>
+
 
         <dependency>
             <groupId>net.lingala.zip4j</groupId>

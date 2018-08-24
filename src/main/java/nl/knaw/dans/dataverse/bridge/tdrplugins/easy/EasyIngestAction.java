@@ -1,10 +1,9 @@
-package nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy;
+package nl.knaw.dans.dataverse.bridge.tdrplugins.easy;
 
+import nl.knaw.dans.dataverse.bridge.core.common.*;
 import nl.knaw.dans.dataverse.bridge.core.util.BridgeHelper;
 import nl.knaw.dans.dataverse.bridge.core.util.StateEnum;
 import nl.knaw.dans.dataverse.bridge.exception.BridgeException;
-import nl.knaw.dans.dataverse.bridge.ingest.IDataverseIngest;
-import nl.knaw.dans.dataverse.bridge.ingest.ResponseDataHolder;
 import org.apache.abdera.i18n.iri.IRI;
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Link;
@@ -24,29 +23,44 @@ import java.net.URISyntaxException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-
-/**
- * Created by akmi on 04/05/17.
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+/*
+    @author Eko Indarto
  */
-public class IngestToEasy implements IDataverseIngest {
-    private String landingPage;
-    private String doi;
-    private static final Logger LOG = LoggerFactory.getLogger(IngestToEasy.class);
-    private int timeout = 60000;
-    int chunkSize = 262144000;
-
+public class EasyIngestAction implements IAction {
+    ITransform iTransform = new EasyTransformer();
+    private static final Logger LOG = LoggerFactory.getLogger(EasyIngestAction.class);
+    private static final int timeout = 60000;
+    private static final int chunkSize = 104857600;//100MB
 
     @Override
-    public ResponseDataHolder execute(File bagitZipFile, IRI colIri, String uid, String pw) throws BridgeException{
-        long checkingTimePeriod = 5000;
-        ResponseDataHolder responseDataHolder = null;
-        try {
-            DigestInputStream dis = getDigestInputStream(bagitZipFile);
+    public Map<String, String> transform(String ddiExportUrl, String apiToken, List<XsltSource> xlsList) throws BridgeException {
+        iTransform = new EasyTransformer();
+        Map<String, String> transformResult = iTransform.getTransformResult(ddiExportUrl, apiToken, xlsList);
+        return transformResult;
+    }
 
-            CloseableHttpClient http = BridgeHelper.createHttpClient(colIri.toURI(), uid, pw, getTimeout());
+    @Override
+    public Optional<File> composeBagit(String bagitBaseDir, String apiToken, String ddiExportUrl, Map<String, String> transformedXml) throws BridgeException {
+        IBagitComposer iBagitComposer = new EasyBagComposer();
+        DvFileList dvFileList = iTransform.getDvFileList(apiToken).get();
+        File bagitFile = iBagitComposer.buildBag(bagitBaseDir, ddiExportUrl, transformedXml, dvFileList);
+        return Optional.of(bagitFile);
+    }
+
+    @Override
+    public ResponseDataHolder execute(Optional<File> baggitZippedFileOpt, IRI colIri, String uid, Optional<String> pwd) throws BridgeException {
+        ResponseDataHolder responseDataHolder = null;
+        long checkingTimePeriod = 5000;
+        try {
+            File bagitZippedFile = baggitZippedFileOpt.get();
+            DigestInputStream dis = getDigestInputStream(bagitZippedFile);
+
+            CloseableHttpClient http = BridgeHelper.createHttpClient(colIri.toURI(), uid, pwd.get(), getTimeout());
             CloseableHttpResponse response = BridgeHelper.sendChunk(dis, getChunkSize(), "POST", colIri.toURI(), "bag.zip.1", "application/octet-stream", http,
-                    getChunkSize() < bagitZipFile.length());
+                    getChunkSize() < bagitZippedFile.length());
 
             String bodyText = BridgeHelper.readEntityAsString(response.getEntity());
             if (response.getStatusLine().getStatusCode() != 201) {
@@ -62,10 +76,10 @@ public class IngestToEasy implements IDataverseIngest {
             Link seIriLink = receipt.getLink("edit");
             URI seIri = seIriLink.getHref().toURI();
 
-            int remaining = (int) bagitZipFile.length() - chunkSize;
+            int remaining = (int) bagitZippedFile.length() - chunkSize;
             int count = 2;
             while (remaining > 0) {
-                checkingTimePeriod += 1000;
+                checkingTimePeriod += 2000;
                 LOG.info(String.format("POST-ing chunk of %d bytes to SE-IRI (remaining: %d) ... ", chunkSize, remaining));
                 response = BridgeHelper.sendChunk(dis, chunkSize, "POST", seIri, "bag.zip." + count++, "application/octet-stream", http, remaining > chunkSize);
                 remaining -= chunkSize;
@@ -103,6 +117,12 @@ public class IngestToEasy implements IDataverseIngest {
         return responseDataHolder;
     }
 
+    @Override
+    public void save() throws BridgeException {
+
+    }
+
+
     private DigestInputStream getDigestInputStream(File bagitZipFile) throws FileNotFoundException, NoSuchAlgorithmException {
         FileInputStream fis = new FileInputStream(bagitZipFile);
         MessageDigest md = MessageDigest.getInstance("MD5");
@@ -121,7 +141,7 @@ public class IngestToEasy implements IDataverseIngest {
                 response = http.execute(new HttpGet(statUri));
                 responseDataHolder = new ResponseDataHolder(response.getEntity().getContent());
                 String state = responseDataHolder.getState();
-                LOG.info("State: " + state);
+                LOG.info("Response state from EASY: " + state);
                 if (state.equals(StateEnum.ARCHIVED.toString()) || state.equals(StateEnum.INVALID.toString())
                         || state.equals(StateEnum.REJECTED.toString()) || state.equals(StateEnum.FAILED.toString()))
                     return responseDataHolder;
@@ -139,18 +159,9 @@ public class IngestToEasy implements IDataverseIngest {
         return timeout;
     }
 
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
-    }
 
     public int getChunkSize() {
         return chunkSize;
     }
-
-    public void setChunkSize(int chunkSize) {
-        this.chunkSize = chunkSize;
-    }
-
-
 
 }

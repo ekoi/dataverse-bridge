@@ -35,6 +35,7 @@ import java.util.Optional;
 NOTES: The most part of the code comes from
 https://github.com/DANS-KNAW/easy-sword2-dans-examples/blob/master/src/main/java/nl/knaw/dans/easy/sword2examples/Common.java
  */
+
 public class BridgeHelper {
     static final String BAGIT_URI = "http://purl.org/net/sword/package/BagIt";
     static final BagFactory bagFactory = new BagFactory();
@@ -73,7 +74,7 @@ public class BridgeHelper {
         return response;
     }
 
-    private static byte[] readChunk(InputStream is, int size) throws IOException {
+    public static byte[] readChunk(InputStream is, int size) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] bytes = new byte[size];
         int c = is.read(bytes);
@@ -97,5 +98,9 @@ public class BridgeHelper {
     public static <T extends Enum<T>> Optional<T> valueOf(Class<T> clazz, String name) {
         return EnumSet.allOf(clazz).stream().filter(v -> v.name().equals(name))
                 .findAny();
+    }
+
+    public String helloEko(){
+        return "HELLOOOO";
     }
 }

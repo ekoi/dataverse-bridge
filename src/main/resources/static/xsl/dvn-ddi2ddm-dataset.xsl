@@ -58,7 +58,7 @@
                     <dcx-dai:author>
                         <!-- <dcx-dai:titles></dcx-dai:titles> -->
                         <dcx-dai:initials>
-                            <xsl:value-of select="$intial"/>
+                            <xsl:value-of select="substring($intial, 1, 1)"/>
                         </dcx-dai:initials>
                         <dcx-dai:insertions/>
                         <dcx-dai:surname>
@@ -166,8 +166,12 @@
             <!-- TODO would like to have the handle (pid) here, would be very strange not to have it.
                 It points to the dataset in Dataverse which has all versions and not just the one deposited in EASY,
                 also it might be just a tumbstone. -->
-            <dc:identifier><xsl:value-of select="ddi:stdyDscr/ddi:citation/ddi:titlStmt/ddi:IDNo"/></dc:identifier>
-
+            <xsl:variable name="hdl" select="ddi:stdyDscr/ddi:citation/ddi:titlStmt/ddi:IDNo"/>
+            <xsl:variable name="hdl-xslUrl" select="concat('https://hdl.handle.net/',$hdl)"/>
+            <ddm:isVersionOf>
+                <xsl:attribute name="href"><xsl:value-of select="$hdl-xslUrl" /> </xsl:attribute>
+                <xsl:value-of select="$hdl"/>
+            </ddm:isVersionOf>
             <!-- maybe also add handle as relation with link and dcterms:isVersionOf, then it becomes a clickable link in EASY ?  -->
 
             <!-- Note: Where do we put the version information; like V1 in the citation? -->

@@ -1,4 +1,4 @@
-package nl.knaw.dans.dataverse.bridge.ingest;
+package nl.knaw.dans.dataverse.bridge.core.common;
 
 import nl.knaw.dans.dataverse.bridge.core.util.StateEnum;
 import nl.knaw.dans.dataverse.bridge.exception.BridgeException;
@@ -17,6 +17,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+/*
+    @author Eko Indarto
+ */
 public class ResponseDataHolder {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseDataHolder.class);
     private String state;
@@ -50,18 +53,18 @@ public class ResponseDataHolder {
         Feed feed = doc.getRoot();
         List<Category> categories = feed.getCategories("http://purl.org/net/sword/terms/state");
         if (categories.size() != 1)
-            throw new BridgeException("Zero or multiples categories. Catagories size:  " + categories.size(), "ResponseDataHolder");
+            throw new BridgeException("Zero or multiples categories. Catagories size:  " + categories.size(), this.getClass());
         else {
             Category category = categories.get(0);
             state = category.getTerm();
             if (state.equals(StateEnum.ARCHIVED.toString())){
-                landingPage = category.getText();
                 List<Entry> entries = feed.getEntries();
                 if (entries.size() != 1) {
-                    throw new BridgeException("Categories size is not equals 1. Size: " + categories.size(), "ResponseDataHolder");
+                    throw new BridgeException("Categories size is not equals 1. Size: " + categories.size(), this.getClass());
                 } else {
                     Entry entry = entries.get(0);
-                    pid = entry.getLink("self").getHref().getPath().replace("/", "");
+                    landingPage = entry.getLink("self").getHref().toString();
+                    pid = entry.getLink("self").getHref().getPath().replaceFirst("/", "");
                 }
             } else {
                     String msg = "State is : " + state + " feed: " + feedXml;

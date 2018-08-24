@@ -1,5 +1,7 @@
 package nl.knaw.dans.dataverse.bridge.core.util;
-
+/*
+ * @author: Eko Indarto
+ */
 public enum StateEnum {
     IN_PROGRESS("IN-PROGRESS"),
     ERROR("ERROR"),

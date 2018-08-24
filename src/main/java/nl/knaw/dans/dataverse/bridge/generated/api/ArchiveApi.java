@@ -21,7 +21,7 @@ import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-18T22:12:26.512+02:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-24T14:46:26.508+02:00")
 
 @Api(value = "archive", description = "the archive API")
 public interface ArchiveApi {
@@ -40,7 +40,7 @@ public interface ArchiveApi {
         return getRequest().map(r -> r.getHeader("Accept"));
     }
 
-    @ApiOperation(value = "Operation to create a new Archive", nickname = "createArchive", notes = "Add a new archive to TDR", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, tags={ "archiving", })
+    @ApiOperation(value = "Operation to create a new Archive", nickname = "createArchive", notes = "Add a new archive to TDR", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, tags={ "Archiving", })
     @ApiResponses(value = { 
         @ApiResponse(code = 201, message = "Dataset succesfully created.", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class),
         @ApiResponse(code = 400, message = "Dataset couldn't have been created."),
@@ -66,7 +66,7 @@ public interface ArchiveApi {
     }
 
 
-    @ApiOperation(value = "Deletes a record", nickname = "deleteById", notes = "", tags={ "archiving", })
+    @ApiOperation(value = "Deletes a record", nickname = "deleteById", notes = "", tags={ "Archiving", })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Record is deleted"),
         @ApiResponse(code = 400, message = "Invalid ID supplied"),
@@ -83,7 +83,7 @@ public interface ArchiveApi {
     }
 
 
-    @ApiOperation(value = "Deletes a record", nickname = "deleteByParams", notes = "", tags={ "archiving", })
+    @ApiOperation(value = "Deletes a record", nickname = "deleteByParams", notes = "", tags={ "Archiving", })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Record is deleted"),
         @ApiResponse(code = 400, message = "Invalid Paramas supplied"),
@@ -100,7 +100,7 @@ public interface ArchiveApi {
     }
 
 
-    @ApiOperation(value = "peration to retrive all Archived datasets", nickname = "getAll", notes = "Operation to retrive all Archived datasets", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, responseContainer = "List", tags={ "archiving", })
+    @ApiOperation(value = "Operation to retrive all Archived datasets", nickname = "getAll", notes = "Operation to retrive all Archived datasets", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, responseContainer = "List", tags={ "Archiving", })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Plugin response", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, responseContainer = "List"),
         @ApiResponse(code = 200, message = "unexpected error", response = Error.class) })
@@ -124,14 +124,15 @@ public interface ArchiveApi {
     }
 
 
-    @ApiOperation(value = "Operation to retrive a state of an Archived dataset", nickname = "getState", notes = "Operation to retrive a state of an Archived dataset by filtering pid, version, tdr target.", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, tags={ "archiving", })
+    @ApiOperation(value = "", nickname = "getById", notes = "", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, tags={ "Archiving", })
     @ApiResponses(value = { 
-        @ApiResponse(code = 200, message = "Plugin response", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class),
-        @ApiResponse(code = 200, message = "unexpected error", response = Error.class) })
-    @RequestMapping(value = "/archive/state",
+        @ApiResponse(code = 200, message = "Record Id to search", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class),
+        @ApiResponse(code = 400, message = "Invalid ID supplied"),
+        @ApiResponse(code = 404, message = "Record not found") })
+    @RequestMapping(value = "/archive/{id}",
         produces = { "application/json" }, 
         method = RequestMethod.GET)
-    default ResponseEntity<nl.knaw.dans.dataverse.bridge.core.db.domain.Archived> getState(@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcXml", required = true) String srcXml,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcVersion", required = true) String srcVersion,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "targetIri", required = true) String targetIri) {
+    default ResponseEntity<nl.knaw.dans.dataverse.bridge.core.db.domain.Archived> getById(@ApiParam(value = "Record id",required=true) @PathVariable("id") Long id) {
         if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
             if (getAcceptHeader().get().contains("application/json")) {
                 try {
@@ -148,7 +149,56 @@ public interface ArchiveApi {
     }
 
 
-    @ApiOperation(value = "Updated Archive", nickname = "updateArchive", notes = "Update the existing Archive.", tags={ "archiving", })
+    @ApiOperation(value = "", nickname = "getByIdAndState", notes = "", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, tags={ "Archiving", })
+    @ApiResponses(value = { 
+        @ApiResponse(code = 200, message = "Record Id to search", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class),
+        @ApiResponse(code = 400, message = "Invalid ID supplied"),
+        @ApiResponse(code = 404, message = "Record not found") })
+    @RequestMapping(value = "/archive/{id}/{state}",
+        produces = { "application/json" }, 
+        method = RequestMethod.GET)
+    default ResponseEntity<nl.knaw.dans.dataverse.bridge.core.db.domain.Archived> getByIdAndState(@ApiParam(value = "Record id",required=true) @PathVariable("id") Long id,@ApiParam(value = "",required=true) @PathVariable("state") String state) {
+        if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
+            if (getAcceptHeader().get().contains("application/json")) {
+                try {
+                    return new ResponseEntity<>(getObjectMapper().get().readValue("{  \"srcXml\" : \"srcXml\",  \"landingPage\" : \"landingPage\",  \"pid\" : \"pid\",  \"startTime\" : \"2000-01-23\",  \"id\" : 0,  \"endTime\" : \"2000-01-23\",  \"state\" : \"IN-PROGRESS\",  \"srcVersion\" : \"srcVersion\",  \"targetIri\" : \"targetIri\"}", nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.NOT_IMPLEMENTED);
+                } catch (IOException e) {
+                    log.error("Couldn't serialize response for content type application/json", e);
+                    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }
+        } else {
+            log.warn("ObjectMapper or HttpServletRequest not configured in default ArchiveApi interface so no example is generated");
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+    }
+
+
+    @ApiOperation(value = "Operation to retrive a state of an Archived dataset", nickname = "getState", notes = "Operation to retrive a state of an Archived dataset by filtering pid, version, tdr target.", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class, tags={ "Archiving", })
+    @ApiResponses(value = { 
+        @ApiResponse(code = 200, message = "Plugin response", response = nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class),
+        @ApiResponse(code = 200, message = "unexpected error", response = Error.class) })
+    @RequestMapping(value = "/archive/state",
+        produces = { "application/json" }, 
+        method = RequestMethod.GET)
+    default ResponseEntity<nl.knaw.dans.dataverse.bridge.core.db.domain.Archived> getState(@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcMetadataXml", required = true) String srcMetadataXml,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "srcMetadataVersion", required = true) String srcMetadataVersion,@NotNull @ApiParam(value = "", required = true) @Valid @RequestParam(value = "targetTdrName", required = true) String targetTdrName) {
+        if(getObjectMapper().isPresent() && getAcceptHeader().isPresent()) {
+            if (getAcceptHeader().get().contains("application/json")) {
+                try {
+                    return new ResponseEntity<>(getObjectMapper().get().readValue("{  \"srcXml\" : \"srcXml\",  \"landingPage\" : \"landingPage\",  \"pid\" : \"pid\",  \"startTime\" : \"2000-01-23\",  \"id\" : 0,  \"endTime\" : \"2000-01-23\",  \"state\" : \"IN-PROGRESS\",  \"srcVersion\" : \"srcVersion\",  \"targetIri\" : \"targetIri\"}", nl.knaw.dans.dataverse.bridge.core.db.domain.Archived.class), HttpStatus.NOT_IMPLEMENTED);
+                } catch (IOException e) {
+                    log.error("Couldn't serialize response for content type application/json", e);
+                    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }
+        } else {
+            log.warn("ObjectMapper or HttpServletRequest not configured in default ArchiveApi interface so no example is generated");
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+    }
+
+
+    @ApiOperation(value = "Updated Archive", nickname = "updateArchive", notes = "Update the existing Archive.", tags={ "Archiving", })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Record is updated"),
         @ApiResponse(code = 400, message = "Invalid id supplied"),

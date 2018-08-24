@@ -11,7 +11,7 @@ import java.util.Objects;
  * TdrData
  */
 @Validated
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-18T22:12:26.512+02:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-24T14:46:26.508+02:00")
 
 public class TdrData   {
   @JsonProperty("username")
@@ -20,11 +20,8 @@ public class TdrData   {
   @JsonProperty("password")
   private String password = null;
 
-  @JsonProperty("appName")
-  private String appName = null;
-
-  @JsonProperty("iri")
-  private String iri = null;
+  @JsonProperty("tdrName")
+  private String tdrName = null;
 
   public TdrData username(String username) {
     this.username = username;
@@ -68,46 +65,24 @@ public class TdrData   {
     this.password = password;
   }
 
-  public TdrData appName(String appName) {
-    this.appName = appName;
+  public TdrData tdrName(String tdrName) {
+    this.tdrName = tdrName;
     return this;
   }
 
   /**
-   * Get appName
-   * @return appName
+   * Get tdrName
+   * @return tdrName
   **/
-  @ApiModelProperty(required = true, value = "")
-  @NotNull
+  @ApiModelProperty(value = "")
 
 
-  public String getAppName() {
-    return appName;
+  public String getTdrName() {
+    return tdrName;
   }
 
-  public void setAppName(String appName) {
-    this.appName = appName;
-  }
-
-  public TdrData iri(String iri) {
-    this.iri = iri;
-    return this;
-  }
-
-  /**
-   * Get iri
-   * @return iri
-  **/
-  @ApiModelProperty(required = true, value = "")
-  @NotNull
-
-
-  public String getIri() {
-    return iri;
-  }
-
-  public void setIri(String iri) {
-    this.iri = iri;
+  public void setTdrName(String tdrName) {
+    this.tdrName = tdrName;
   }
 
 
@@ -122,13 +97,12 @@ public class TdrData   {
     TdrData tdrData = (TdrData) o;
     return Objects.equals(this.username, tdrData.username) &&
         Objects.equals(this.password, tdrData.password) &&
-        Objects.equals(this.appName, tdrData.appName) &&
-        Objects.equals(this.iri, tdrData.iri);
+        Objects.equals(this.tdrName, tdrData.tdrName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(username, password, appName, iri);
+    return Objects.hash(username, password, tdrName);
   }
 
   @Override
@@ -138,8 +112,7 @@ public class TdrData   {
     
     sb.append("    username: ").append(toIndentedString(username)).append("\n");
     sb.append("    password: ").append(toIndentedString(password)).append("\n");
-    sb.append("    appName: ").append(toIndentedString(appName)).append("\n");
-    sb.append("    iri: ").append(toIndentedString(iri)).append("\n");
+    sb.append("    tdrName: ").append(toIndentedString(tdrName)).append("\n");
     sb.append("}");
     return sb.toString();
   }

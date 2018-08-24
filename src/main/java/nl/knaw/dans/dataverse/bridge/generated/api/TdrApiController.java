@@ -8,14 +8,14 @@ import java.util.Optional;
 @javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-24T14:46:26.508+02:00")
 
 @Controller
-public class ArchiveApiController implements ArchiveApi {
+public class TdrApiController implements TdrApi {
 
     private final ObjectMapper objectMapper;
 
     private final HttpServletRequest request;
 
     @org.springframework.beans.factory.annotation.Autowired
-    public ArchiveApiController(ObjectMapper objectMapper, HttpServletRequest request) {
+    public TdrApiController(ObjectMapper objectMapper, HttpServletRequest request) {
         this.objectMapper = objectMapper;
         this.request = request;
     }

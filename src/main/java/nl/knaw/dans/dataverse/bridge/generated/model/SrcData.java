@@ -11,7 +11,7 @@ import java.util.Objects;
  * SrcData
  */
 @Validated
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-18T22:12:26.512+02:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-24T14:46:26.508+02:00")
 
 public class SrcData   {
   @JsonProperty("srcXml")
@@ -19,9 +19,6 @@ public class SrcData   {
 
   @JsonProperty("srcVersion")
   private String srcVersion = null;
-
-  @JsonProperty("appName")
-  private String appName = null;
 
   @JsonProperty("apiToken")
   private String apiToken = null;
@@ -68,27 +65,6 @@ public class SrcData   {
     this.srcVersion = srcVersion;
   }
 
-  public SrcData appName(String appName) {
-    this.appName = appName;
-    return this;
-  }
-
-  /**
-   * Get appName
-   * @return appName
-  **/
-  @ApiModelProperty(required = true, value = "")
-  @NotNull
-
-
-  public String getAppName() {
-    return appName;
-  }
-
-  public void setAppName(String appName) {
-    this.appName = appName;
-  }
-
   public SrcData apiToken(String apiToken) {
     this.apiToken = apiToken;
     return this;
@@ -121,13 +97,12 @@ public class SrcData   {
     SrcData srcData = (SrcData) o;
     return Objects.equals(this.srcXml, srcData.srcXml) &&
         Objects.equals(this.srcVersion, srcData.srcVersion) &&
-        Objects.equals(this.appName, srcData.appName) &&
         Objects.equals(this.apiToken, srcData.apiToken);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(srcXml, srcVersion, appName, apiToken);
+    return Objects.hash(srcXml, srcVersion, apiToken);
   }
 
   @Override
@@ -137,7 +112,6 @@ public class SrcData   {
     
     sb.append("    srcXml: ").append(toIndentedString(srcXml)).append("\n");
     sb.append("    srcVersion: ").append(toIndentedString(srcVersion)).append("\n");
-    sb.append("    appName: ").append(toIndentedString(appName)).append("\n");
     sb.append("    apiToken: ").append(toIndentedString(apiToken)).append("\n");
     sb.append("}");
     return sb.toString();

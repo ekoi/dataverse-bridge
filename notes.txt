@@ -1,13 +1,15 @@
 SERVER STUBS
-To generate in the current location use: -o .
+To generate in the current xslUrl use: -o .
 
 swagger-codegen generate -i dataverse-bridge-api.yaml -l spring -o . -c dataverse-bridge-config.json --import-mappings Archived=nl.knaw.dans.dataverse.bridge.core.db.domain.Archived
 
+
+swagger-codegen generate -i dataverse-bridge-api.yaml -l spring -o . -c dataverse-bridge-config.json --import-mappings Archived=nl.knaw.dans.dataverse.bridge.core.db.domain.Archived,TdrConf=nl.knaw.dans.dataverse.bridge.core.common.TdrConf,XsltSource=nl.knaw.dans.dataverse.bridge.core.common.XsltSource
 
 
 java -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5105 -Xms128M -Xmx2G -jar dataverse-bridge-0.1.0.jar
 
 java -Xms128M -Xmx2G -jar dataverse-bridge-0.1.0.jar
+java -Dspring.profiles.active=dev -jar target/dataverse-bridge-0.5.0.jar
 
-
-dd if=/dev/urandom bs=1024 count=3000000 of=file_1GB conv=notrunc
+dd if=/dev/urandom bs=1024 count=3000000 of=file_3GB conv=notrunc

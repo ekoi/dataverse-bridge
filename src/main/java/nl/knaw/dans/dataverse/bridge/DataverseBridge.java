@@ -1,6 +1,7 @@
 package nl.knaw.dans.dataverse.bridge;
 
 import nl.knaw.dans.dataverse.bridge.generated.api.ArchiveApiController;
+import nl.knaw.dans.dataverse.bridge.generated.api.TdrApiController;
 import nl.knaw.dans.dataverse.bridge.generated.io.swagger.Swagger2SpringBoot;
 import nl.knaw.dans.dataverse.bridge.generated.io.swagger.config.SwaggerDocumentationConfig;
 import org.springframework.boot.CommandLineRunner;
@@ -12,13 +13,16 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
+/*
+    @Author Eko Indarto
+ */
 @EnableTransactionManagement
 @SpringBootApplication
 @EnableSwagger2
 @ComponentScan(basePackages = { "nl.knaw.dans.dataverse.bridge.generated.io.swagger", "nl.knaw.dans.dataverse.bridge.generated.api"
                 , "nl.knaw.dans.dataverse.bridge.core"},
         excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
-        value = {Swagger2SpringBoot.class, SwaggerDocumentationConfig.class, ArchiveApiController.class}))
+        value = {Swagger2SpringBoot.class, SwaggerDocumentationConfig.class, ArchiveApiController.class, TdrApiController.class}))
 public class DataverseBridge implements CommandLineRunner {
 
     @Override

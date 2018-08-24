@@ -8,9 +8,9 @@ info:
 host: "localhost:8080"
 basePath: "/api"
 tags:
-- name: TDR target
+- name: 'TDR Configuration'
   description: "Trust Digital Repositories"
-- name: "archiving"
+- name: "Archiving"
   description: "Archive-related operation of datasets of Dataverse."
 schemes:
 - "http"
@@ -20,7 +20,7 @@ paths:
   /archive/state:
     get:
       tags:
-      - "archiving"
+      - "Archiving"
       summary: "Operation to retrive a state of an Archived dataset"
       description: "Operation to retrive a state of an Archived dataset by filtering pid, version, tdr target."
       operationId: "getState"
@@ -28,15 +28,15 @@ paths:
       - application/json
       parameters:
       - in: "query"
-        name: "srcXml"
+        name: "srcMetadataXml"
         required: true
         type: string
       - in: "query"
-        name: "srcVersion"
+        name: "srcMetadataVersion"
         required: true
         type: string
       - in: "query"
-        name: "targetIri"
+        name: "targetTdrName"
         required: true
         type: string
       responses:
@@ -51,29 +51,29 @@ paths:
 
   /archive/get-all:
     get:
-        tags:
-        - "archiving"
-        summary: "peration to retrive all Archived datasets"
-        description: "Operation to retrive all Archived datasets"
-        operationId: "getAll"
-        produces:
-        - application/json
-        responses:
-          '200':
-            description: Plugin response
-            schema:
-              type: array
-              items:
-                $ref: '#/definitions/Archived'
-          default:
-            description: unexpected error
-            schema:
-              $ref: '#/definitions/Error'
+      tags:
+      - "Archiving"
+      summary: "Operation to retrive all Archived datasets"
+      description: "Operation to retrive all Archived datasets"
+      operationId: "getAll"
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: Plugin response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Archived'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
 
   /archive/create:
     post:
       tags:
-      - "archiving"
+      - "Archiving"
       summary: "Operation to create a new Archive"
       description: "Add a new archive to TDR"
       operationId: "createArchive"
@@ -98,10 +98,60 @@ paths:
         '405':
           description: "Invalid input"
 
+  /archive/{id}/{state}:
+    get:
+      tags:
+      - "Archiving"
+      operationId: "getByIdAndState"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          description: "Record id"
+          required: true
+          type: "integer"
+          format: "int64"
+        - in: "path"
+          name: "state"
+          type: "string"
+          required: true
+      responses:
+        200:
+         description: Record Id to search
+         schema:
+           $ref: '#/definitions/Archived'
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Record not found"
   /archive/{id}:
+    get:
+      tags:
+      - "Archiving"
+      operationId: "getById"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "id"
+          in: "path"
+          description: "Record id"
+          required: true
+          type: "integer"
+          format: "int64"
+      responses:
+        200:
+         description: Record Id to search
+         schema:
+           $ref: '#/definitions/Archived'
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Record not found"
+
     delete:
       tags:
-        - "archiving"
+        - "Archiving"
       summary: "Deletes a record"
       description: ""
       operationId: "deleteById"
@@ -129,7 +179,7 @@ paths:
   /archive:
     delete:
       tags:
-        - "archiving"
+        - "Archiving"
       summary: "Deletes a record"
       description: ""
       operationId: "deleteByParams"
@@ -162,7 +212,7 @@ paths:
           description: "Record not found"
     put:
       tags:
-      - archiving
+      - Archiving
       summary: Updated Archive
       description: Update the existing Archive.
       operationId: updateArchive
@@ -187,6 +237,52 @@ paths:
           description: Invalid id supplied
         404:
           description: Archived not found
+
+  /tdr/get-all:
+    get:
+      tags:
+      - "TDR Configuration"
+      summary: "Operation to retrive all TDR Configuration"
+      description: "Operation to retrive all TDR Configuration"
+      operationId: "getAllTdrConf"
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: Plugin response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TdrConf'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /tdr/get/{name}:
+    get:
+      tags:
+      - "TDR Configuration"
+      summary: "Operation to retrive a TDR Configuration"
+      description: "Operation to retrive all TDR Configuration"
+      operationId: "getTdrConfByName"
+      produces:
+      - application/json
+      parameters:
+      - in: "path"
+        name: "name"
+        type: "string"
+        required: true
+      responses:
+        '200':
+          description: Plugin response
+          schema:
+           $ref: '#/definitions/TdrConf'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+
 definitions:
 
   Archived:
@@ -203,7 +299,7 @@ definitions:
         type: string
       targetIri:
         type: string
-      doi:
+      pid:
         type: string
       startTime:
         type: string
@@ -224,15 +320,14 @@ definitions:
     required:
       - srcXml
       - srcVersion
-      - appName
     properties:
       srcXml:
         type: string
         description: exported xml link
       srcVersion:
         type: string
-      appName:
-        type: string
+      #appName:
+      #  type: string
       apiToken:
         type: string
         description: Api Token is optional
@@ -242,16 +337,15 @@ definitions:
       - username
       - password
       - iri
-      - appName
     properties:
       username:
         type: string
       password:
         type: string
-      appName:
+      tdrName:
         type: string
-      iri:
-        type: string
+#      iri:
+#        type: string
 
   IngestData:
     required:
@@ -262,6 +356,25 @@ definitions:
         $ref: '#/definitions/SrcData'
       tdrData:
         $ref: '#/definitions/TdrData'
+
+  TdrConf:
+    properties:
+      tdrName:
+        type: string
+      iri:
+        type: string
+      actionClassName:
+        type: string
+      xsl:
+        type: array
+        items:
+          $ref: '#/definitions/XsltSource'
+  XsltSource:
+    properties:
+      xslName:
+        type: string
+      location:
+        type: string
 
   Error:
     required:

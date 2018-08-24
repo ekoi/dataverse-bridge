@@ -85,12 +85,12 @@ public class ArchivedDao {
     /**
      * Return the Archived having the passed name.
      */
-    public Archived getBySrcxmlSrcversionTargetiri(String srcXml, String srcVersion, String targetIri) {
+    public Archived getBySrcxmlSrcversionTargetiri(String srcMetadataXml, String srcMetadataVersion, String tdrName) {
         Query q = entityManager.createQuery(
-                "from Archived where srcXml = :srcXml and srcVersion = :srcVersion and targetIri = :targetIri")
-                .setParameter("srcXml", srcXml)
-                .setParameter("srcVersion", srcVersion)
-                .setParameter("targetIri", targetIri);
+                "from Archived where srcMetadataXml = :srcMetadataXml and srcMetadataVersion = :srcMetadataVersion and tdrName = :tdrName")
+                .setParameter("srcMetadataXml", srcMetadataXml)
+                .setParameter("srcMetadataVersion", srcMetadataVersion)
+                .setParameter("tdrName", tdrName);
         try {
             return (Archived) q.getSingleResult();
         } catch (NoResultException nre) {

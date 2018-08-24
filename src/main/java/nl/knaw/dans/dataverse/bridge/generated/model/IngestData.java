@@ -12,7 +12,7 @@ import java.util.Objects;
  * IngestData
  */
 @Validated
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-18T22:12:26.512+02:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.SpringCodegen", date = "2018-08-24T14:46:26.508+02:00")
 
 public class IngestData   {
   @JsonProperty("srcData")

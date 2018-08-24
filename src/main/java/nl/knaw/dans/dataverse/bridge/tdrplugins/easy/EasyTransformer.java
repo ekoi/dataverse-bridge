@@ -1,5 +1,8 @@
-package nl.knaw.dans.dataverse.bridge.ingest.tdrplugins.danseasy;
+package nl.knaw.dans.dataverse.bridge.tdrplugins.easy;
 
+import nl.knaw.dans.dataverse.bridge.core.common.DvFileList;
+import nl.knaw.dans.dataverse.bridge.core.common.ITransform;
+import nl.knaw.dans.dataverse.bridge.core.common.XsltSource;
 import nl.knaw.dans.dataverse.bridge.core.util.FilePermissionChecker;
 import nl.knaw.dans.dataverse.bridge.exception.BridgeException;
 import org.slf4j.Logger;
@@ -17,6 +20,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -25,18 +29,17 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-
-/**
- * Created by akmi on 26/04/17.
+/*
+    @author Eko Indarto
  */
-public class Dv2EasyTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(Dv2EasyTransformer.class);
-
-    private static String DDI_EXPORT_URL;
-
+public class EasyTransformer implements ITransform {
+    private static final Logger LOG = LoggerFactory.getLogger(EasyTransformer.class);
     private Templates cachedXSLTDataset;
+    private String dvDdiMetadataUrl;
     private Templates cachedXSLTFiles;
     private String datasetXml;
     private String filesXml;
@@ -44,30 +47,52 @@ public class Dv2EasyTransformer {
     private Map<String, String> restrictedFiles = new HashMap<String, String>();
     private Map<String, String> publicFiles = new HashMap<String, String>();
 
-
-    public Dv2EasyTransformer(String ddiEportUrl, String apiToken, Source srcXsltDataset, Source srcXsltFiles) throws BridgeException {
-        this.DDI_EXPORT_URL = ddiEportUrl;
-        init(srcXsltDataset, srcXsltFiles);
+    @Override
+    public Map<String, String> getTransformResult(String dvDdiMetadataUrl, String apiToken, List<XsltSource> xlsList) throws BridgeException {
+        this.dvDdiMetadataUrl = dvDdiMetadataUrl;
+        init(xlsList);
         build();
+        Map<String, String> transformResult = new HashMap<String, String>();
+        transformResult.put("dataset.xml", datasetXml);
+        transformResult.put("files.xml", filesXml);
+        return transformResult;
     }
 
-    private void build() throws BridgeException {
-        Document ddiDocument = getDocument();//buildDocument
-        transformToDataset(ddiDocument);
-        transformToFilesXml(ddiDocument);
-        if (!restrictedFiles.isEmpty())
-            fixedAccessRight();
+    @Override
+    public Optional<DvFileList> getDvFileList(String apiToken) {
+        DvFileList dvFileList = new DvFileList(apiToken, restrictedFiles, publicFiles);
+        return Optional.of(dvFileList);
     }
-    private void init(Source srcXsltDataset, Source srcXsltFiles) throws BridgeException {
+
+    private void init(List<XsltSource> xsltSourceList) throws BridgeException {
         TransformerFactory transFact = new net.sf.saxon.TransformerFactoryImpl();
         try {
-            cachedXSLTDataset = transFact.newTemplates(srcXsltDataset);
-            cachedXSLTFiles = transFact.newTemplates(srcXsltFiles);
+            Optional<XsltSource> xsltSourceDatasetXml = xsltSourceList.stream().filter(x -> x.getXslName().equals("dataset.xml")).findAny();
+            if (xsltSourceDatasetXml.isPresent()) {
+                Source srcXslDataset = new StreamSource(xsltSourceDatasetXml.get().getXslUrl());
+                cachedXSLTDataset = transFact.newTemplates(srcXslDataset);
+            } else
+                new BridgeException("xsltSourceList of dataset.xml is not found", this.getClass());
+
+            Optional<XsltSource> xsltSourceFilesXml = xsltSourceList.stream().filter(x -> x.getXslName().equals("files.xml")).findAny();
+            if (xsltSourceFilesXml.isPresent()) {
+                Source srcXsltFiles = new StreamSource(xsltSourceFilesXml.get().getXslUrl());
+                cachedXSLTFiles = transFact.newTemplates(srcXsltFiles);
+            } else
+                new BridgeException("xsltSourceList of files.xml is not found", this.getClass());
+
         } catch (TransformerConfigurationException e) {
             LOG.error("ERROR: TransformerConfigurationException, caused by: " + e.getMessage());
             throw new BridgeException("init - TransformerConfigurationException, caused by: " + e.getMessage()
                     , e, this.getClass());
         }
+    }
+    private void build() throws BridgeException {
+        Document ddiDocument = getDvDdiDocument();//buildDocument
+        transformToDataset(ddiDocument);
+        transformToFilesXml(ddiDocument);
+        if (!restrictedFiles.isEmpty())
+            fixedAccessRight();
     }
 
     private void transformToDataset(Document doc) throws BridgeException {
@@ -138,36 +163,28 @@ public class Dv2EasyTransformer {
         }
     }
 
-    private Document getDocument() throws BridgeException {
+    private Document getDvDdiDocument() throws BridgeException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         DocumentBuilder builder;
         Document doc = null;
         try {
             builder = factory.newDocumentBuilder();
-            doc = builder.parse(DDI_EXPORT_URL);
+            doc = builder.parse(dvDdiMetadataUrl);
         } catch (ParserConfigurationException e) {
-            LOG.error("ERROR: getDocument - ParserConfigurationException, caused by: " + e.getMessage());
-            throw new BridgeException("getDocument - ParserConfigurationException, caused by: " + e.getMessage(), e
+            LOG.error("ERROR: getDvDdiDocument - ParserConfigurationException, caused by: " + e.getMessage());
+            throw new BridgeException("getDvDdiDocument - ParserConfigurationException, caused by: " + e.getMessage(), e
                     , this.getClass());
         } catch (SAXException e) {
-            LOG.error("ERROR: getDocument - SAXException, caused by: " + e.getMessage());
+            LOG.error("ERROR: getDvDdiDocument - SAXException, caused by: " + e.getMessage());
             throw new BridgeException("SAXException - ParserConfigurationException, caused by: " + e.getMessage(), e
                     , this.getClass());
         } catch (IOException e) {
-            LOG.error("ERROR: getDocument - IOException, caused by: " + e.getMessage());
-            throw new BridgeException("getDocument - IOException, caused by: " + e.getMessage(), e
+            LOG.error("ERROR: getDvDdiDocument - IOException, caused by: " + e.getMessage());
+            throw new BridgeException("getDvDdiDocument - IOException, caused by: " + e.getMessage(), e
                     , this.getClass());
         }
         return doc;
-    }
-
-    public String getDatasetXml() {
-        return datasetXml;
-    }
-
-    public String getFilesXml() {
-        return filesXml;
     }
 
     public Map<String, String> getRestrictedFiles() {
@@ -179,7 +196,7 @@ public class Dv2EasyTransformer {
     }
 
     /*This accessRight workaround: permission request is possible per file in Dataverse,
-    * but this is not exported to DDI*/
+     * but this is not exported to DDI*/
     private void fixedAccessRight() throws BridgeException {
         Document datasetDoc= loadXMLFromString(datasetXml);
         try {
@@ -229,4 +246,5 @@ public class Dv2EasyTransformer {
                     , this.getClass());
         }
     }
+
 }
